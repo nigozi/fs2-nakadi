@@ -11,6 +11,7 @@ fork in Test := true
 parallelExecution in Test := true
 testForkedParallel in Test := true
 
+
 scalacOptions ++= Seq(
   "-deprecation", // Emit warning and location for usages of deprecated APIs.
   "-encoding",
@@ -61,8 +62,10 @@ libraryDependencies ++= Seq(
   "io.circe"                   %% "circe-derivation"    % "0.10.0-M1",
   "org.http4s"                 %% "http4s-dsl"          % http4sVersion,
   "org.http4s"                 %% "http4s-blaze-client" % http4sVersion,
+  "org.http4s"                 %% "http4s-blaze-server" % http4sVersion,
   "org.http4s"                 %% "http4s-core"         % http4sVersion,
   "org.http4s"                 %% "http4s-circe"        % http4sVersion,
+  "com.beachape"               %% "enumeratum-circe"    % "1.5.20",
   "com.typesafe.scala-logging" %% "scala-logging"       % "3.8.0",
   "ch.qos.logback"             % "logback-classic"      % "1.1.7",
   "org.specs2"                 %% "specs2-core"         % "3.8.9" % Test,
