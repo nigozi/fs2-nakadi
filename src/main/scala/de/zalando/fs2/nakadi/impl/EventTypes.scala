@@ -13,7 +13,7 @@ class EventTypes[F[_]: Monad: Sync](client: Client[F]) {
 
   protected val logger: LoggerTakingImplicit[FlowId] = Logger.takingImplicit[FlowId](classOf[EventTypes[F]])
 
-  def list()(implicit flowId: FlowId): Kleisli[F, NakadiConfig[F], Either[String, List[EventType]]] =
+  def list(implicit flowId: FlowId): Kleisli[F, NakadiConfig[F], Either[String, List[EventType]]] =
     Kleisli { config =>
       val uri         = config.baseUri / "event-types"
       val baseHeaders = List(Header("X-Flow-ID", flowId.id))

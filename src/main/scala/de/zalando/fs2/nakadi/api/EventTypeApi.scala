@@ -7,7 +7,7 @@ import de.zalando.fs2.nakadi.model._
 
 @finalAlg
 trait EventTypeApi[F[_]] {
-  def list()(implicit flowId: FlowId = randomFlowId()): Kleisli[F, NakadiConfig[F], Either[String, List[EventType]]]
+  def list(implicit flowId: FlowId = randomFlowId()): Kleisli[F, NakadiConfig[F], Either[String, List[EventType]]]
 
   def create(eventType: EventType)(
       implicit flowId: FlowId = randomFlowId()): Kleisli[F, NakadiConfig[F], Either[String, Unit]]
@@ -26,8 +26,8 @@ object EventTypeApi {
   implicit object ioEventTypes extends EventTypeApi[IO] {
     val impl = new EventTypes[IO](httpClient)
 
-    override def list()(implicit flowId: FlowId): Kleisli[IO, NakadiConfig[IO], Either[String, List[EventType]]] =
-      impl.list()
+    override def list(implicit flowId: FlowId): Kleisli[IO, NakadiConfig[IO], Either[String, List[EventType]]] =
+      impl.list
     override def create(eventType: EventType)(
         implicit flowId: FlowId): Kleisli[IO, NakadiConfig[IO], Either[String, Unit]] =
       impl.create(eventType)
