@@ -54,6 +54,7 @@ scalacOptions ++= Seq(
 )
 
 addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.9")
+addCompilerPlugin( "org.scalameta" % "paradise" % "3.0.0-M11" cross CrossVersion.full)
 
 libraryDependencies ++= Seq(
   "io.circe"                   %% "circe-core"          % circeVersion,
@@ -65,6 +66,7 @@ libraryDependencies ++= Seq(
   "org.http4s"                 %% "http4s-blaze-server" % http4sVersion,
   "org.http4s"                 %% "http4s-core"         % http4sVersion,
   "org.http4s"                 %% "http4s-circe"        % http4sVersion,
+  "org.typelevel"              %% "cats-tagless-macros" % "0.2.0",
   "com.beachape"               %% "enumeratum-circe"    % "1.5.20",
   "com.typesafe.scala-logging" %% "scala-logging"       % "3.8.0",
   "ch.qos.logback"             % "logback-classic"      % "1.1.7",

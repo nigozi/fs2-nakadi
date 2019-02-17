@@ -6,10 +6,11 @@ import cats.Monad
 import cats.effect.Sync
 import cats.implicits._
 import com.typesafe.scalalogging.CanLog
-import de.zalando.fs2.nakadi.model.{FlowId, OAuth2Token, OAuth2TokenProvider}
+import de.zalando.fs2.nakadi.model.{FlowId, NakadiConfig, OAuth2Token, OAuth2TokenProvider}
 import io.circe.{Decoder, Encoder}
 import org.http4s.Credentials.Token
 import org.http4s.circe.{jsonEncoderOf, jsonOf}
+import org.http4s.client.Client
 import org.http4s.headers.Authorization
 import org.http4s.util.CaseInsensitiveString
 import org.http4s.{EntityDecoder, EntityEncoder, Header}
@@ -38,6 +39,9 @@ package object impl {
     }
 
   private[impl] def randomFlowId() = FlowId(UUID.randomUUID().toString)
+
+  private[impl] def httpClient[F[_]](config: NakadiConfig[F], default: Client[F]): Client[F] =
+    config.httpClient.getOrElse(default)
 
   private[impl] implicit def listDecoder[F[_]: Sync, T <: util.Collection[_]: Decoder](
       implicit ed: EntityDecoder[F, T]): EntityDecoder[F, List[T]] =
