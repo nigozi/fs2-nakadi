@@ -1,9 +1,11 @@
 package de.zalando.fs2.nakadi.model
 import java.time.OffsetDateTime
 
+import scala.collection.immutable
+
 import enumeratum._
-import io.circe.syntax._
 import io.circe.{Decoder, Encoder, Json, JsonObject}
+import io.circe.syntax._
 
 final case class WriteScope(id: String) extends AnyVal
 
@@ -33,11 +35,11 @@ object EventTypeName {
 }
 
 sealed abstract class Audience(val id: String) extends EnumEntry with Product with Serializable {
-  override val entryName = id
+  override val entryName: String = id
 }
 
 object Audience extends Enum[Audience] {
-  val values = findValues
+  val values: immutable.IndexedSeq[Audience] = findValues
   case object BusinessUnitInternal extends Audience("business-unit-internal")
   case object CompanyInternal      extends Audience("company-internal")
   case object ComponentInternal    extends Audience("component-internal")
@@ -52,11 +54,11 @@ object Audience extends Enum[Audience] {
 }
 
 sealed abstract class Category(val id: String) extends EnumEntry with Product with Serializable {
-  override val entryName = id
+  override val entryName: String = id
 }
 
 object Category extends Enum[Category] {
-  val values = findValues
+  val values: immutable.IndexedSeq[Category] = findValues
   case object Business  extends Category("business")
   case object Data      extends Category("data")
   case object Undefined extends Category("undefined")
@@ -69,11 +71,11 @@ object Category extends Enum[Category] {
 }
 
 sealed abstract class EnrichmentStrategy(val id: String) extends EnumEntry with Product with Serializable {
-  override val entryName = id
+  override val entryName: String = id
 }
 
 object EnrichmentStrategy extends Enum[EnrichmentStrategy] {
-  val values = findValues
+  val values: immutable.IndexedSeq[EnrichmentStrategy] = findValues
   case object MetadataEnrichment extends EnrichmentStrategy("metadata_enrichment")
 
   implicit val enrichmentStrategyEncoder: Encoder[EnrichmentStrategy] =
@@ -83,11 +85,11 @@ object EnrichmentStrategy extends Enum[EnrichmentStrategy] {
 }
 
 sealed abstract class PartitionStrategy(val id: String) extends EnumEntry with Product with Serializable {
-  override val entryName = id
+  override val entryName: String = id
 }
 
 object PartitionStrategy extends Enum[PartitionStrategy] {
-  val values = findValues
+  val values: immutable.IndexedSeq[PartitionStrategy] = findValues
   case object Random      extends PartitionStrategy("random")
   case object UserDefined extends PartitionStrategy("user_defined")
   case object Hash        extends PartitionStrategy("hash")
@@ -99,11 +101,11 @@ object PartitionStrategy extends Enum[PartitionStrategy] {
 }
 
 sealed abstract class CleanupPolicy(val id: String) extends EnumEntry with Product with Serializable {
-  override def entryName = id
+  override def entryName: String = id
 }
 
 object CleanupPolicy extends Enum[CleanupPolicy] {
-  val values = findValues
+  val values: immutable.IndexedSeq[CleanupPolicy] = findValues
   case object Compact extends CleanupPolicy("compact")
   case object Delete  extends CleanupPolicy("delete")
 
@@ -114,11 +116,11 @@ object CleanupPolicy extends Enum[CleanupPolicy] {
 }
 
 sealed abstract class CompatibilityMode(val id: String) extends EnumEntry with Product with Serializable {
-  override val entryName = id
+  override val entryName: String = id
 }
 
 object CompatibilityMode extends Enum[CompatibilityMode] {
-  val values = findValues
+  val values: immutable.IndexedSeq[CompatibilityMode] = findValues
   case object Compatible extends CompatibilityMode("compatible")
   case object Forward    extends CompatibilityMode("forward")
   case object None       extends CompatibilityMode("none")
@@ -145,11 +147,11 @@ object EventTypeSchema {
   )
 
   sealed abstract class Type(val id: String) extends EnumEntry with Product with Serializable {
-    override val entryName = id
+    override val entryName: String = id
   }
 
   object Type extends Enum[Type] {
-    val values = findValues
+    val values: immutable.IndexedSeq[Type] = findValues
 
     case object JsonSchema extends Type("json_schema")
 

@@ -1,27 +1,53 @@
 package de.zalando.fs2.nakadi.api
 
-import cats.data.Kleisli
+import java.net.URI
+
 import cats.effect.IO
-import cats.tagless.finalAlg
-import de.zalando.fs2.nakadi.impl.Registry
-import de.zalando.fs2.nakadi.model.{FlowId, NakadiConfig, PartitionStrategy}
+import com.typesafe.scalalogging.{Logger, LoggerTakingImplicit}
+import org.http4s.{Header, Headers, Request, Status, Uri}
+import org.http4s.Method.GET
 
-@finalAlg
-trait RegistryApi[F[_]] {
-  def enrichmentStrategies(implicit flowId: FlowId): Kleisli[F, NakadiConfig[F], Either[String, List[String]]]
+import de.zalando.fs2.nakadi.error.GeneralError
+import de.zalando.fs2.nakadi.model.{FlowId, OAuth2TokenProvider}
 
-  def partitionStrategies(implicit flowId: FlowId): Kleisli[F, NakadiConfig[F], Either[String, List[PartitionStrategy]]]
+trait RegistryAlg[F[_]] {
+  def enrichmentStrategies(implicit flowId: FlowId): F[List[String]]
+
+  def partitionStrategies(implicit flowId: FlowId): F[List[String]]
 }
 
-object RegistryApi {
-  implicit object ioRegistry extends RegistryApi[IO] {
-    val impl = new Registry[IO](httpClient)
+class RegistryApi(uri: URI, oAuth2TokenProvider: Option[OAuth2TokenProvider]) extends RegistryAlg[IO] {
+  protected val logger: LoggerTakingImplicit[FlowId] = Logger.takingImplicit[FlowId](classOf[RegistryApi])
 
-    override def enrichmentStrategies(
-        implicit flowId: FlowId): Kleisli[IO, NakadiConfig[IO], Either[String, List[String]]] =
-      impl.enrichmentStrategies
-    override def partitionStrategies(
-        implicit flowId: FlowId): Kleisli[IO, NakadiConfig[IO], Either[String, List[PartitionStrategy]]] =
-      impl.partitionStrategies
+  val baseUri: Uri = Uri.unsafeFromString(uri.toString)
+
+  override def enrichmentStrategies(implicit flowId: FlowId): IO[List[String]] = {
+    val uri         = baseUri / "registry" / "enrichment-strategies"
+    val baseHeaders = List(Header("X-Flow-ID", flowId.id))
+
+    for {
+      headers <- addAuth(baseHeaders, oAuth2TokenProvider)
+      request = Request[IO](GET, uri, headers = Headers(headers))
+      _       = logger.debug(request.toString)
+      response <- httpClient.fetch[List[String]](request) {
+                   case Status.Successful(l) => l.as[List[String]]
+                   case r                    => r.as[String].flatMap(e => IO.raiseError(GeneralError(e)))
+                 }
+    } yield response
+  }
+
+  override def partitionStrategies(implicit flowId: FlowId): IO[List[String]] = {
+    val uri         = baseUri / "registry" / "partition-strategies"
+    val baseHeaders = List(Header("X-Flow-ID", flowId.id))
+
+    for {
+      headers <- addAuth(baseHeaders, oAuth2TokenProvider)
+      request = Request[IO](GET, uri, headers = Headers(headers))
+      _       = logger.debug(request.toString)
+      response <- httpClient.fetch[List[String]](request) {
+                   case Status.Successful(l) => l.as[List[String]]
+                   case r                    => r.as[String].flatMap(e => IO.raiseError(GeneralError(e)))
+                 }
+    } yield response
   }
 }

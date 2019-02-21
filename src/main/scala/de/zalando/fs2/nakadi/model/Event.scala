@@ -1,6 +1,8 @@
 package de.zalando.fs2.nakadi.model
 import java.time.OffsetDateTime
 
+import scala.collection.immutable
+
 import enumeratum.{Enum, EnumEntry}
 import io.circe.{Decoder, Encoder, Json}
 import io.circe.Decoder.Result
@@ -105,11 +107,11 @@ object Event {
 }
 
 sealed abstract class DataOperation(val id: String) extends EnumEntry with Product with Serializable {
-  override val entryName = id
+  override val entryName: String = id
 }
 
 object DataOperation extends Enum[DataOperation] {
-  val values = findValues
+  val values: immutable.IndexedSeq[DataOperation] = findValues
   case object Create   extends DataOperation("C")
   case object Update   extends DataOperation("U")
   case object Delete   extends DataOperation("D")
