@@ -1,7 +1,8 @@
-package de.zalando.fs2.nakadi
+package fs2.nakadi
+
 import java.util
-import java.util.UUID
 import java.util.concurrent.Executors
+import java.util.UUID
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutorService}
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -9,14 +10,14 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import cats.effect.{ContextShift, IO}
 import com.typesafe.scalalogging.CanLog
 import org.http4s.{EntityDecoder, EntityEncoder, Header}
-import org.http4s.Credentials.Token
-import org.http4s.circe.{jsonEncoderOf, jsonOf}
 import org.http4s.client.{Client, JavaNetClientBuilder}
 import org.http4s.headers.Authorization
 import org.http4s.util.CaseInsensitiveString
+import org.http4s.Credentials.Token
+import org.http4s.circe._
 import org.slf4j.MDC
 
-import de.zalando.fs2.nakadi.model.{FlowId, OAuth2Token, OAuth2TokenProvider}
+import fs2.nakadi.model.{FlowId, OAuth2Token, OAuth2TokenProvider}
 import io.circe.{Decoder, Encoder}
 
 package object api {
@@ -44,14 +45,14 @@ package object api {
     Authorization(Token(CaseInsensitiveString("Bearer"), oAuth2Token.token))
 
   private[api] def addAuth(baseHeaders: List[Header],
-                           oAuth2TokenProvider: Option[OAuth2TokenProvider]): IO[List[Header]] =
+    oAuth2TokenProvider: Option[OAuth2TokenProvider]): IO[List[Header]] =
     oAuth2TokenProvider match {
       case Some(tp) => tp.provider.apply().map(toHeader).map(_ :: baseHeaders)
       case None     => IO.pure(baseHeaders)
     }
 
   private[api] implicit def listDecoder[T <: util.Collection[_]: Decoder](
-      implicit ed: EntityDecoder[IO, T]): EntityDecoder[IO, List[T]] =
+    implicit ed: EntityDecoder[IO, T]): EntityDecoder[IO, List[T]] =
     jsonOf[IO, List[T]]
 
   private[api] implicit def entityEncoder[T](implicit e: Encoder[T]): EntityEncoder[IO, T] =

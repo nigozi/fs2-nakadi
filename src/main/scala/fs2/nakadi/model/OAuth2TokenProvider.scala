@@ -1,4 +1,4 @@
-package de.zalando.fs2.nakadi.model
+package fs2.nakadi.model
 
 import cats.effect.IO
 

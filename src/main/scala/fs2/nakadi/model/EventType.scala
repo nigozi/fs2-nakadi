@@ -1,4 +1,5 @@
-package de.zalando.fs2.nakadi.model
+package fs2.nakadi.model
+
 import java.time.OffsetDateTime
 
 import scala.collection.immutable

@@ -1,4 +1,4 @@
-package de.zalando.fs2.nakadi.api
+package fs2.nakadi.api
 
 import java.net.URI
 
@@ -7,8 +7,8 @@ import com.typesafe.scalalogging.{Logger, LoggerTakingImplicit}
 import org.http4s.{Header, Headers, Request, Status, Uri}
 import org.http4s.Method.GET
 
-import de.zalando.fs2.nakadi.error.GeneralError
-import de.zalando.fs2.nakadi.model.{FlowId, OAuth2TokenProvider}
+import fs2.nakadi.error._
+import fs2.nakadi.model._
 
 trait RegistryAlg[F[_]] {
   def enrichmentStrategies(implicit flowId: FlowId): F[List[String]]

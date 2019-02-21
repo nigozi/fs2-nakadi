@@ -1,4 +1,4 @@
-package de.zalando.fs2.nakadi.api
+package fs2.nakadi.api
 
 import java.net.URI
 
@@ -7,8 +7,8 @@ import com.typesafe.scalalogging.{Logger, LoggerTakingImplicit}
 import org.http4s.{Header, Headers, Request, Status, Uri}
 import org.http4s.Method.POST
 
-import de.zalando.fs2.nakadi.error.{BatchItemResponse, EventValidation, GeneralError}
-import de.zalando.fs2.nakadi.model.{Event, EventTypeName, FlowId, OAuth2TokenProvider}
+import fs2.nakadi.error.{BatchItemResponse, EventValidation, _}
+import fs2.nakadi.model._
 import io.circe.Encoder
 
 trait EventAlg[F[_]] {

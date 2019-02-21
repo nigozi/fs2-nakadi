@@ -1,7 +1,8 @@
-package de.zalando.fs2.nakadi.error
+package fs2.nakadi.error
+
 import scala.collection.immutable
 
-import de.zalando.fs2.nakadi.model.EventId
+import fs2.nakadi.model.EventId
 import enumeratum.{Enum, EnumEntry}
 import io.circe.{Decoder, Encoder}
 

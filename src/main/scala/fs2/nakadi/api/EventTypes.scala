@@ -1,4 +1,5 @@
-package de.zalando.fs2.nakadi.api
+package fs2.nakadi.api
+
 import java.net.URI
 
 import cats.effect.IO
@@ -7,8 +8,8 @@ import com.typesafe.scalalogging.{Logger, LoggerTakingImplicit}
 import org.http4s.{Header, Headers, Request, Status, Uri}
 import org.http4s.Method._
 
-import de.zalando.fs2.nakadi.error.GeneralError
-import de.zalando.fs2.nakadi.model._
+import fs2.nakadi.error._
+import fs2.nakadi.model._
 
 trait EventTypeAlg[F[_]] {
   def list(implicit flowId: FlowId = randomFlowId()): F[List[EventType]]

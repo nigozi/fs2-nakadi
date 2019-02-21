@@ -1,4 +1,4 @@
-package de.zalando.fs2.nakadi.error
+package fs2.nakadi.error
 
 import io.circe.{Decoder, Encoder}
 
