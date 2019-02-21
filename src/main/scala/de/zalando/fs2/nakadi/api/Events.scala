@@ -15,8 +15,8 @@ trait EventAlg[F[_]] {
   def publish[T: Encoder](name: EventTypeName, events: List[Event[T]])(implicit flowId: FlowId): F[Unit]
 }
 
-class EventApi(uri: URI, oAuth2TokenProvider: Option[OAuth2TokenProvider]) extends EventAlg[IO] {
-  protected val logger: LoggerTakingImplicit[FlowId] = Logger.takingImplicit[FlowId](classOf[EventApi])
+class Events(uri: URI, oAuth2TokenProvider: Option[OAuth2TokenProvider]) extends EventAlg[IO] {
+  protected val logger: LoggerTakingImplicit[FlowId] = Logger.takingImplicit[FlowId](classOf[Events])
 
   val baseUri: Uri = Uri.unsafeFromString(uri.toString)
 

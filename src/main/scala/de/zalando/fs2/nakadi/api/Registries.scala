@@ -16,8 +16,8 @@ trait RegistryAlg[F[_]] {
   def partitionStrategies(implicit flowId: FlowId): F[List[String]]
 }
 
-class RegistryApi(uri: URI, oAuth2TokenProvider: Option[OAuth2TokenProvider]) extends RegistryAlg[IO] {
-  protected val logger: LoggerTakingImplicit[FlowId] = Logger.takingImplicit[FlowId](classOf[RegistryApi])
+class Registries(uri: URI, oAuth2TokenProvider: Option[OAuth2TokenProvider]) extends RegistryAlg[IO] {
+  protected val logger: LoggerTakingImplicit[FlowId] = Logger.takingImplicit[FlowId](classOf[Registries])
 
   val baseUri: Uri = Uri.unsafeFromString(uri.toString)
 

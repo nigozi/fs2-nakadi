@@ -22,8 +22,8 @@ trait EventTypeAlg[F[_]] {
   def delete(name: EventTypeName)(implicit flowId: FlowId = randomFlowId()): F[Unit]
 }
 
-class EventTypeApi(uri: URI, oAuth2TokenProvider: Option[OAuth2TokenProvider]) extends EventTypeAlg[IO] {
-  protected val logger: LoggerTakingImplicit[FlowId] = Logger.takingImplicit[FlowId](classOf[EventTypeApi])
+class EventTypes(uri: URI, oAuth2TokenProvider: Option[OAuth2TokenProvider]) extends EventTypeAlg[IO] {
+  protected val logger: LoggerTakingImplicit[FlowId] = Logger.takingImplicit[FlowId](classOf[EventTypes])
 
   val baseUri: Uri = Uri.unsafeFromString(uri.toString)
 
