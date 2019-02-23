@@ -6,8 +6,8 @@ import io.circe.syntax._
 final case class SpanCtx(ctx: Map[String, String]) extends AnyVal
 
 object SpanCtx {
-  implicit val spanCtxEncoder: Encoder[SpanCtx] =
+  implicit val encoder: Encoder[SpanCtx] =
     Encoder.instance[SpanCtx](_.ctx.asJson)
-  implicit val spanCtxDecoder: Decoder[SpanCtx] =
+  implicit val decoder: Decoder[SpanCtx] =
     Decoder[Map[String, String]].map(SpanCtx.apply)
 }

@@ -2,8 +2,12 @@ package fs2.nakadi.error
 
 import scala.collection.immutable
 
-import fs2.nakadi.model.EventId
+import cats.effect.IO
+import org.http4s.{EntityDecoder, EntityEncoder}
+import org.http4s.circe._
+
 import enumeratum.{Enum, EnumEntry}
+import fs2.nakadi.model.EventId
 import io.circe.{Decoder, Encoder}
 
 final case class BatchItemResponse(eid: Option[EventId],
@@ -12,7 +16,7 @@ final case class BatchItemResponse(eid: Option[EventId],
                                    detail: Option[String])
 
 object BatchItemResponse {
-  implicit val batchItemResponseEncoder: Encoder[BatchItemResponse] =
+  implicit val encoder: Encoder[BatchItemResponse] =
     Encoder.forProduct4(
       "eid",
       "publishing_status",
@@ -20,13 +24,16 @@ object BatchItemResponse {
       "detail"
     )(x => BatchItemResponse.unapply(x).get)
 
-  implicit val batchItemResponseDecoder: Decoder[BatchItemResponse] =
+  implicit val decoder: Decoder[BatchItemResponse] =
     Decoder.forProduct4(
       "eid",
       "publishing_status",
       "step",
       "detail"
     )(BatchItemResponse.apply)
+
+  implicit val entityEncoder: EntityEncoder[IO, BatchItemResponse] = jsonEncoderOf[IO, BatchItemResponse]
+  implicit val entityDecoder: EntityDecoder[IO, BatchItemResponse] = jsonOf[IO, BatchItemResponse]
 }
 
 sealed abstract class PublishingStatus(val id: String) extends EnumEntry with Product with Serializable {
@@ -39,9 +46,9 @@ object PublishingStatus extends Enum[PublishingStatus] {
   case object Failed    extends PublishingStatus("failed")
   case object Aborted   extends PublishingStatus("aborted")
 
-  implicit val eventsErrorsPublishingStatusEncoder: Encoder[PublishingStatus] =
+  implicit val encoder: Encoder[PublishingStatus] =
     enumeratum.Circe.encoder(PublishingStatus)
-  implicit val eventsErrorsPublishingStatusDecoder: Decoder[PublishingStatus] =
+  implicit val decoder: Decoder[PublishingStatus] =
     enumeratum.Circe.decoder(PublishingStatus)
 }
 
@@ -57,9 +64,9 @@ object Step extends Enum[Step] {
   case object Enriching    extends Step("enriching")
   case object Publishing   extends Step("publishing")
 
-  implicit val eventsErrorsStepEncoder: Encoder[Step] =
+  implicit val encoder: Encoder[Step] =
     enumeratum.Circe.encoder(Step)
-  implicit val eventsErrorsStepDecoder: Decoder[Step] =
+  implicit val decoder: Decoder[Step] =
     enumeratum.Circe.decoder(Step)
 }
 

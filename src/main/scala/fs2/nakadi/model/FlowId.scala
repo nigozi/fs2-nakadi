@@ -6,6 +6,6 @@ import io.circe.derivation._
 case class FlowId(id: String) extends AnyVal
 
 object FlowId {
-  implicit val decoder: Decoder[FlowId] = deriveDecoder[FlowId]
   implicit val encoder: Encoder[FlowId] = deriveEncoder[FlowId]
+  implicit val decoder: Decoder[FlowId] = deriveDecoder[FlowId]
 }

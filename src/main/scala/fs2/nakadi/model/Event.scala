@@ -4,6 +4,10 @@ import java.time.OffsetDateTime
 
 import scala.collection.immutable
 
+import cats.effect.IO
+import org.http4s.{EntityDecoder, EntityEncoder}
+import org.http4s.circe.{jsonEncoderOf, jsonOf}
+
 import enumeratum.{Enum, EnumEntry}
 import io.circe.{Decoder, Encoder, Json}
 import io.circe.Decoder.Result
@@ -19,7 +23,7 @@ object Event {
       extends Event[T](data)
 
   object DataChange {
-    implicit def eventDataChangeEncoder[T](implicit encoder: Encoder[T]): Encoder[DataChange[T]] =
+    implicit def encoder[T](implicit encoder: Encoder[T]): Encoder[DataChange[T]] =
       Encoder.forProduct4(
         "data",
         "data_type",
@@ -27,7 +31,7 @@ object Event {
         "metadata"
       )(x => DataChange.unapply(x).get)
 
-    implicit def eventDataChangeDecoder[T](implicit decoder: Decoder[T]): Decoder[DataChange[T]] =
+    implicit def decoder[T](implicit decoder: Decoder[T]): Decoder[DataChange[T]] =
       Decoder.forProduct4(
         "data",
         "data_type",
@@ -39,7 +43,7 @@ object Event {
   final case class Business[T](override val data: T, metadata: Metadata = Metadata()) extends Event[T](data)
 
   object Business {
-    implicit def eventBusinessEncoder[T](implicit encoder: Encoder[T]): Encoder[Business[T]] =
+    implicit def encoder[T](implicit encoder: Encoder[T]): Encoder[Business[T]] =
       Encoder.instance[Business[T]] { x =>
         val metadata = Json.obj(
           "metadata" -> x.metadata.asJson
@@ -48,7 +52,7 @@ object Event {
         data.deepMerge(metadata)
       }
 
-    implicit def eventBusinessDecoder[T](
+    implicit def decoder[T](
         implicit decoder: Decoder[T]
     ): Decoder[Business[T]] =
       Decoder.instance[Business[T]] { c =>
@@ -62,12 +66,12 @@ object Event {
   final case class Undefined[T](override val data: T) extends Event[T](data)
 
   object Undefined {
-    implicit def eventUndefinedEncoder[T](implicit encoder: Encoder[T]): Encoder[Undefined[T]] =
+    implicit def encoder[T](implicit encoder: Encoder[T]): Encoder[Undefined[T]] =
       Encoder.instance[Undefined[T]] { x =>
         x.data.asJson
       }
 
-    implicit def eventUndefinedDecoder[T](
+    implicit def decoder[T](
         implicit decoder: Decoder[T]
     ): Decoder[Undefined[T]] =
       Decoder.instance[Undefined[T]] { c =>
@@ -77,14 +81,14 @@ object Event {
       }
   }
 
-  implicit def eventEncoder[T](implicit encoder: Encoder[T]): Encoder[Event[T]] =
+  implicit def encoder[T](implicit encoder: Encoder[T]): Encoder[Event[T]] =
     Encoder.instance[Event[T]] {
       case e: Event.DataChange[T] => e.asJson
       case e: Event.Business[T]   => e.asJson
       case e: Event.Undefined[T]  => e.asJson
     }
 
-  implicit def eventDecoder[T](implicit decoder: Decoder[T]): Decoder[Event[T]] =
+  implicit def decoder[T](implicit decoder: Decoder[T]): Decoder[Event[T]] =
     Decoder.instance[Event[T]](
       c => {
         val dataOpR   = c.downField("data_op").as[Option[String]]
@@ -105,6 +109,10 @@ object Event {
         }).joinRight
       }
     )
+
+  implicit def entityEncoder[T](implicit enc: Encoder[Event[T]]): EntityEncoder[IO, Event[T]] =
+    jsonEncoderOf[IO, Event[T]]
+  implicit def entityDecoder[T](implicit dec: Decoder[Event[T]]): EntityDecoder[IO, Event[T]] = jsonOf[IO, Event[T]]
 }
 
 sealed abstract class DataOperation(val id: String) extends EnumEntry with Product with Serializable {
@@ -118,9 +126,9 @@ object DataOperation extends Enum[DataOperation] {
   case object Delete   extends DataOperation("D")
   case object Snapshot extends DataOperation("S")
 
-  implicit val dataOperationEncoder: Encoder[DataOperation] =
+  implicit val encoder: Encoder[DataOperation] =
     enumeratum.Circe.encoder(DataOperation)
-  implicit val dataOperationDecoder: Decoder[DataOperation] =
+  implicit val decoder: Decoder[DataOperation] =
     enumeratum.Circe.decoder(DataOperation)
 }
 
@@ -136,7 +144,7 @@ final case class Metadata(eid: EventId = EventId.random,
 
 object Metadata {
 
-  implicit val metadataEncoder: Encoder[Metadata] = Encoder.forProduct9(
+  implicit val encoder: Encoder[Metadata] = Encoder.forProduct9(
     "eid",
     "occurred_at",
     "event_type",
@@ -148,7 +156,7 @@ object Metadata {
     "span_ctx"
   )(x => Metadata.unapply(x).get)
 
-  implicit val metadataDecoder: Decoder[Metadata] = Decoder.forProduct9(
+  implicit val decoder: Decoder[Metadata] = Decoder.forProduct9(
     "eid",
     "occurred_at",
     "event_type",

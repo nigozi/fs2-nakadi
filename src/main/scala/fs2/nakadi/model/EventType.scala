@@ -4,6 +4,10 @@ import java.time.OffsetDateTime
 
 import scala.collection.immutable
 
+import cats.effect.IO
+import org.http4s.circe.{jsonEncoderOf, jsonOf}
+import org.http4s.{EntityDecoder, EntityEncoder}
+
 import enumeratum._
 import io.circe.{Decoder, Encoder, Json, JsonObject}
 import io.circe.syntax._
@@ -11,27 +15,27 @@ import io.circe.syntax._
 final case class WriteScope(id: String) extends AnyVal
 
 object WriteScope {
-  implicit val writeScopeEncoder: Encoder[WriteScope] =
+  implicit val encoder: Encoder[WriteScope] =
     Encoder.instance[WriteScope](_.id.asJson)
-  implicit val writeScopeDecoder: Decoder[WriteScope] =
+  implicit val decoder: Decoder[WriteScope] =
     Decoder[String].map(WriteScope.apply)
 }
 
 final case class ReadScope(id: String) extends AnyVal
 
 object ReadScope {
-  implicit val readScopeEncoder: Encoder[ReadScope] =
+  implicit val encoder: Encoder[ReadScope] =
     Encoder.instance[ReadScope](_.id.asJson)
-  implicit val readScopeDecoder: Decoder[ReadScope] =
+  implicit val decoder: Decoder[ReadScope] =
     Decoder[String].map(ReadScope.apply)
 }
 
 final case class EventTypeName(name: String) extends AnyVal
 
 object EventTypeName {
-  implicit val eventTypeNameEncoder: Encoder[EventTypeName] =
+  implicit val encoder: Encoder[EventTypeName] =
     Encoder.instance[EventTypeName](_.name.asJson)
-  implicit val eventTypeNameDecoder: Decoder[EventTypeName] =
+  implicit val decoder: Decoder[EventTypeName] =
     Decoder[String].map(EventTypeName.apply)
 }
 
@@ -47,10 +51,10 @@ object Audience extends Enum[Audience] {
   case object ExternalPartner      extends Audience("external-partner")
   case object ExternalPublic       extends Audience("external-public")
 
-  implicit val audienceEncoder: Encoder[Audience] =
+  implicit val encoder: Encoder[Audience] =
     enumeratum.Circe.encoder(Audience)
 
-  implicit val audienceDecoder: Decoder[Audience] =
+  implicit val decoder: Decoder[Audience] =
     enumeratum.Circe.decoder(Audience)
 }
 
@@ -64,10 +68,10 @@ object Category extends Enum[Category] {
   case object Data      extends Category("data")
   case object Undefined extends Category("undefined")
 
-  implicit val categoryEncoder: Encoder[Category] =
+  implicit val encoder: Encoder[Category] =
     enumeratum.Circe.encoder(Category)
 
-  implicit val categoryDecoder: Decoder[Category] =
+  implicit val decoder: Decoder[Category] =
     enumeratum.Circe.decoder(Category)
 }
 
@@ -79,9 +83,9 @@ object EnrichmentStrategy extends Enum[EnrichmentStrategy] {
   val values: immutable.IndexedSeq[EnrichmentStrategy] = findValues
   case object MetadataEnrichment extends EnrichmentStrategy("metadata_enrichment")
 
-  implicit val enrichmentStrategyEncoder: Encoder[EnrichmentStrategy] =
+  implicit val encoder: Encoder[EnrichmentStrategy] =
     enumeratum.Circe.encoder(EnrichmentStrategy)
-  implicit val enrichmentStrategyDecoder: Decoder[EnrichmentStrategy] =
+  implicit val decoder: Decoder[EnrichmentStrategy] =
     enumeratum.Circe.decoder(EnrichmentStrategy)
 }
 
@@ -95,9 +99,9 @@ object PartitionStrategy extends Enum[PartitionStrategy] {
   case object UserDefined extends PartitionStrategy("user_defined")
   case object Hash        extends PartitionStrategy("hash")
 
-  implicit val partitionStrategyEncoder: Encoder[PartitionStrategy] =
+  implicit val encoder: Encoder[PartitionStrategy] =
     enumeratum.Circe.encoder(PartitionStrategy)
-  implicit val partitionStrategyDecoder: Decoder[PartitionStrategy] =
+  implicit val decoder: Decoder[PartitionStrategy] =
     enumeratum.Circe.decoder(PartitionStrategy)
 }
 
@@ -110,9 +114,9 @@ object CleanupPolicy extends Enum[CleanupPolicy] {
   case object Compact extends CleanupPolicy("compact")
   case object Delete  extends CleanupPolicy("delete")
 
-  implicit val cleanupPolicyEncoder: Encoder[CleanupPolicy] =
+  implicit val encoder: Encoder[CleanupPolicy] =
     enumeratum.Circe.encoder(CleanupPolicy)
-  implicit val cleanupPolicyDecoder: Decoder[CleanupPolicy] =
+  implicit val decoder: Decoder[CleanupPolicy] =
     enumeratum.Circe.decoder(CleanupPolicy)
 }
 
@@ -126,10 +130,10 @@ object CompatibilityMode extends Enum[CompatibilityMode] {
   case object Forward    extends CompatibilityMode("forward")
   case object None       extends CompatibilityMode("none")
 
-  implicit val compatibilityModeEncoder: Encoder[CompatibilityMode] =
+  implicit val encoder: Encoder[CompatibilityMode] =
     enumeratum.Circe.encoder(CompatibilityMode)
 
-  implicit val compatibilityModeDecoder: Decoder[CompatibilityMode] =
+  implicit val decoder: Decoder[CompatibilityMode] =
     enumeratum.Circe.decoder(CompatibilityMode)
 }
 
@@ -156,16 +160,16 @@ object EventTypeSchema {
 
     case object JsonSchema extends Type("json_schema")
 
-    implicit val eventTypeSchemaTypeEncoder: Encoder[Type] =
+    implicit val encoder: Encoder[Type] =
       enumeratum.Circe.encoder(Type)
-    implicit val eventTypeSchemaTypeDecoder: Decoder[Type] =
+    implicit val decoder: Decoder[Type] =
       enumeratum.Circe.decoder(Type)
   }
 
-  implicit val eventTypeSchemaEncoder: Encoder[EventTypeSchema] =
+  implicit val encoder: Encoder[EventTypeSchema] =
     Encoder.forProduct4("version", "created_at", "type", "schema")(x => EventTypeSchema.unapply(x).get)
 
-  implicit val eventTypeSchemaDecoder: Decoder[EventTypeSchema] =
+  implicit val decoder: Decoder[EventTypeSchema] =
     Decoder.forProduct4("version", "created_at", "type", "schema")(EventTypeSchema.apply)
 }
 
@@ -175,7 +179,7 @@ final case class EventTypeStatistics(messagesPerMinute: Int,
                                      writeParallelism: Int)
 
 object EventTypeStatistics {
-  implicit val eventTypeStatisticsEncoder: Encoder[EventTypeStatistics] =
+  implicit val encoder: Encoder[EventTypeStatistics] =
     Encoder.forProduct4(
       "messages_per_minute",
       "message_size",
@@ -183,7 +187,7 @@ object EventTypeStatistics {
       "write_parallelism"
     )(x => EventTypeStatistics.unapply(x).get)
 
-  implicit val eventTypeStatisticsDecoder: Decoder[EventTypeStatistics] =
+  implicit val decoder: Decoder[EventTypeStatistics] =
     Decoder.forProduct4(
       "messages_per_minute",
       "message_size",
@@ -195,13 +199,13 @@ object EventTypeStatistics {
 final case class AuthorizationAttribute(dataType: String, value: String)
 
 object AuthorizationAttribute {
-  implicit val eventTypeAuthorizationAuthorizationAttributeEncoder: Encoder[AuthorizationAttribute] =
+  implicit val encoder: Encoder[AuthorizationAttribute] =
     Encoder.forProduct2(
       "data_type",
       "value"
     )(x => AuthorizationAttribute.unapply(x).get)
 
-  implicit val eventTypeAuthorizationAuthorizationAttributeDecoder: Decoder[AuthorizationAttribute] =
+  implicit val decoder: Decoder[AuthorizationAttribute] =
     Decoder.forProduct2(
       "data_type",
       "value"
@@ -213,14 +217,14 @@ final case class EventTypeAuthorization(admins: List[AuthorizationAttribute],
                                         writers: List[AuthorizationAttribute])
 
 object EventTypeAuthorization {
-  implicit val eventTypeAuthorizationEncoder: Encoder[EventTypeAuthorization] =
+  implicit val encoder: Encoder[EventTypeAuthorization] =
     Encoder.forProduct3(
       "admins",
       "readers",
       "writers"
     )(x => EventTypeAuthorization.unapply(x).get)
 
-  implicit val eventTypeAuthorizationDecoder: Decoder[EventTypeAuthorization] =
+  implicit val decoder: Decoder[EventTypeAuthorization] =
     Decoder.forProduct3(
       "admins",
       "readers",
@@ -231,12 +235,12 @@ object EventTypeAuthorization {
 final case class EventTypeOptions(retentionTime: Int)
 
 object EventTypeOptions {
-  implicit val eventTypeOptionsEncoder: Encoder[EventTypeOptions] =
+  implicit val encoder: Encoder[EventTypeOptions] =
     Encoder.forProduct1(
       "retention_time"
     )(x => EventTypeOptions.unapply(x).get)
 
-  implicit val eventTypeOptionsDecoder: Decoder[EventTypeOptions] =
+  implicit val decoder: Decoder[EventTypeOptions] =
     Decoder.forProduct1(
       "retention_time"
     )(EventTypeOptions.apply)
@@ -265,7 +269,7 @@ final case class EventType(
 )
 
 object EventType {
-  implicit val eventTypeEncoder: Encoder[EventType] = Encoder.forProduct19(
+  implicit val encoder: Encoder[EventType] = Encoder.forProduct19(
     "name",
     "owning_application",
     "category",
@@ -287,7 +291,7 @@ object EventType {
     "updated_at"
   )(x => EventType.unapply(x).get)
 
-  implicit val eventTypeDecoder: Decoder[EventType] = Decoder.forProduct19(
+  implicit val decoder: Decoder[EventType] = Decoder.forProduct19(
     "name",
     "owning_application",
     "category",
@@ -308,4 +312,7 @@ object EventType {
     "created_at",
     "updated_at"
   )(EventType.apply)
+
+  implicit val entityEncoder: EntityEncoder[IO, EventType] = jsonEncoderOf[IO, EventType]
+  implicit val entityDecoder: EntityDecoder[IO, EventType] = jsonOf[IO, EventType]
 }

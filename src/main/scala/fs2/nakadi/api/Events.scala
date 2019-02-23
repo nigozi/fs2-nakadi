@@ -14,7 +14,7 @@ trait EventAlg[F[_]] {
   def publish[T: Encoder](name: EventTypeName, events: List[Event[T]])(implicit flowId: FlowId): F[Unit]
 }
 
-class Events(config: NakadiConfig) extends EventAlg[IO] {
+class Events(config: NakadiConfig) extends EventAlg[IO] with Implicits {
   protected val logger: LoggerTakingImplicit[FlowId] = Logger.takingImplicit[FlowId](classOf[Events])
 
   private val baseUri       = Uri.unsafeFromString(config.uri.toString)
@@ -29,12 +29,14 @@ class Events(config: NakadiConfig) extends EventAlg[IO] {
       headers <- addAuth(baseHeaders, tokenProvider)
       request = Request[IO](POST, uri, headers = Headers(headers)).withEntity(events)
       _       = logger.debug(request.toString)
-      response <- httpClient.fetch[Unit](request) {
-                   case Status.Successful(_) => ().pure[IO]
-                   case Status.UnprocessableEntity(r) =>
-                     r.as[List[BatchItemResponse]].flatMap(e => IO.raiseError(EventValidation(e)))
-                   case r => r.as[String].flatMap(e => IO.raiseError(GeneralError(e)))
-                 }
+      response <- httpClient
+                   .fetch[Unit](request) {
+                     case Status.Successful(_) => ().pure[IO]
+                     case Status.UnprocessableEntity(r) =>
+                       r.as[List[BatchItemResponse]].flatMap(e => IO.raiseError(EventValidation(e)))
+                     case r => r.as[String].flatMap(e => IO.raiseError(GeneralError(e)))
+                   }
+                   .handleErrorWith(e => IO.raiseError(GeneralError(e.getLocalizedMessage)))
     } yield response
   }
 }

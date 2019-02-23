@@ -14,7 +14,7 @@ trait RegistryAlg[F[_]] {
   def partitionStrategies(implicit flowId: FlowId): F[List[String]]
 }
 
-class Registries(config: NakadiConfig) extends RegistryAlg[IO] {
+class Registries(config: NakadiConfig) extends RegistryAlg[IO] with Implicits {
   protected val logger: LoggerTakingImplicit[FlowId] = Logger.takingImplicit[FlowId](classOf[Registries])
 
   private val baseUri       = Uri.unsafeFromString(config.uri.toString)
@@ -29,10 +29,12 @@ class Registries(config: NakadiConfig) extends RegistryAlg[IO] {
       headers <- addAuth(baseHeaders, tokenProvider)
       request = Request[IO](GET, uri, headers = Headers(headers))
       _       = logger.debug(request.toString)
-      response <- httpClient.fetch[List[String]](request) {
-                   case Status.Successful(l) => l.as[List[String]]
-                   case r                    => r.as[String].flatMap(e => IO.raiseError(GeneralError(e)))
-                 }
+      response <- httpClient
+                   .fetch[List[String]](request) {
+                     case Status.Successful(l) => l.as[List[String]]
+                     case r                    => r.as[String].flatMap(e => IO.raiseError(GeneralError(e)))
+                   }
+                   .handleErrorWith(e => IO.raiseError(GeneralError(e.getLocalizedMessage)))
     } yield response
   }
 
@@ -44,10 +46,12 @@ class Registries(config: NakadiConfig) extends RegistryAlg[IO] {
       headers <- addAuth(baseHeaders, tokenProvider)
       request = Request[IO](GET, uri, headers = Headers(headers))
       _       = logger.debug(request.toString)
-      response <- httpClient.fetch[List[String]](request) {
-                   case Status.Successful(l) => l.as[List[String]]
-                   case r                    => r.as[String].flatMap(e => IO.raiseError(GeneralError(e)))
-                 }
+      response <- httpClient
+                   .fetch[List[String]](request) {
+                     case Status.Successful(l) => l.as[List[String]]
+                     case r                    => r.as[String].flatMap(e => IO.raiseError(GeneralError(e)))
+                   }
+                   .handleErrorWith(e => IO.raiseError(GeneralError(e.getLocalizedMessage)))
     } yield response
   }
 }

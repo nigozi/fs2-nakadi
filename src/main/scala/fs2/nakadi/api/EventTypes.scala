@@ -22,7 +22,7 @@ trait EventTypeAlg[F[_]] {
   def delete(name: EventTypeName)(implicit flowId: FlowId = randomFlowId()): F[Unit]
 }
 
-class EventTypes(config: NakadiConfig) extends EventTypeAlg[IO] {
+class EventTypes(config: NakadiConfig) extends EventTypeAlg[IO] with Implicits {
   protected val logger: LoggerTakingImplicit[FlowId] = Logger.takingImplicit[FlowId](classOf[EventTypes])
 
   private val baseUri       = Uri.unsafeFromString(config.uri.toString)
@@ -37,10 +37,12 @@ class EventTypes(config: NakadiConfig) extends EventTypeAlg[IO] {
       headers <- addAuth(baseHeaders, tokenProvider)
       request = Request[IO](GET, uri, headers = Headers(headers))
       _       = logger.debug(request.toString)
-      response <- httpClient.fetch[List[EventType]](request) {
-                   case Status.Successful(l) => l.as[List[EventType]]
-                   case r                    => r.as[String].flatMap(e => IO.raiseError(GeneralError(e)))
-                 }
+      response <- httpClient
+                   .fetch[List[EventType]](request) {
+                     case Status.Successful(l) => l.as[List[EventType]]
+                     case r                    => r.as[String].flatMap(e => IO.raiseError(GeneralError(e)))
+                   }
+                   .handleErrorWith(e => IO.raiseError(GeneralError(e.getLocalizedMessage)))
     } yield response
   }
 
@@ -52,10 +54,12 @@ class EventTypes(config: NakadiConfig) extends EventTypeAlg[IO] {
       headers <- addAuth(baseHeaders, tokenProvider)
       request = Request[IO](POST, uri, headers = Headers(headers)).withEntity(eventType)
       _       = logger.debug(request.toString)
-      response <- httpClient.fetch[Unit](request) {
-                   case Status.Successful(_) => ().pure[IO]
-                   case r                    => r.as[String].flatMap(e => IO.raiseError(GeneralError(e)))
-                 }
+      response <- httpClient
+                   .fetch[Unit](request) {
+                     case Status.Successful(_) => ().pure[IO]
+                     case r                    => r.as[String].flatMap(e => IO.raiseError(GeneralError(e)))
+                   }
+                   .handleErrorWith(e => IO.raiseError(GeneralError(e.getLocalizedMessage)))
     } yield response
   }
 
@@ -67,11 +71,13 @@ class EventTypes(config: NakadiConfig) extends EventTypeAlg[IO] {
       headers <- addAuth(baseHeaders, tokenProvider)
       request = Request[IO](GET, uri, headers = Headers(headers))
       _       = logger.debug(request.toString)
-      response <- httpClient.fetch[Option[EventType]](request) {
-                   case Status.NotFound(_)   => None.pure[IO]
-                   case Status.Successful(l) => l.as[EventType].map(_.some)
-                   case r                    => r.as[String].flatMap(e => IO.raiseError(GeneralError(e)))
-                 }
+      response <- httpClient
+                   .fetch[Option[EventType]](request) {
+                     case Status.NotFound(_)   => None.pure[IO]
+                     case Status.Successful(l) => l.as[EventType].map(_.some)
+                     case r                    => r.as[String].flatMap(e => IO.raiseError(GeneralError(e)))
+                   }
+                   .handleErrorWith(e => IO.raiseError(GeneralError(e.getLocalizedMessage)))
     } yield response
   }
 
@@ -83,10 +89,12 @@ class EventTypes(config: NakadiConfig) extends EventTypeAlg[IO] {
       headers <- addAuth(baseHeaders, tokenProvider)
       request = Request[IO](PUT, uri, headers = Headers(headers)).withEntity(eventType)
       _       = logger.debug(request.toString)
-      response <- httpClient.fetch[Unit](request) {
-                   case Status.Successful(_) => ().pure[IO]
-                   case r                    => r.as[String].flatMap(e => IO.raiseError(GeneralError(e)))
-                 }
+      response <- httpClient
+                   .fetch[Unit](request) {
+                     case Status.Successful(_) => ().pure[IO]
+                     case r                    => r.as[String].flatMap(e => IO.raiseError(GeneralError(e)))
+                   }
+                   .handleErrorWith(e => IO.raiseError(GeneralError(e.getLocalizedMessage)))
     } yield response
   }
 
@@ -98,10 +106,12 @@ class EventTypes(config: NakadiConfig) extends EventTypeAlg[IO] {
       headers <- addAuth(baseHeaders, tokenProvider)
       request = Request[IO](DELETE, uri, headers = Headers(headers))
       _       = logger.debug(request.toString)
-      response <- httpClient.fetch[Unit](request) {
-                   case Status.Successful(l) => ().pure[IO]
-                   case r                    => r.as[String].flatMap(e => IO.raiseError(GeneralError(e)))
-                 }
+      response <- httpClient
+                   .fetch[Unit](request) {
+                     case Status.Successful(_) => ().pure[IO]
+                     case r                    => r.as[String].flatMap(e => IO.raiseError(GeneralError(e)))
+                   }
+                   .handleErrorWith(e => IO.raiseError(GeneralError(e.getLocalizedMessage)))
     } yield response
   }
 }
