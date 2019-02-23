@@ -16,7 +16,7 @@ trait RegistryAlg[F[_]] {
   def partitionStrategies(implicit flowId: FlowId): F[List[String]]
 }
 
-class Registries(uri: URI, oAuth2TokenProvider: Option[OAuth2TokenProvider]) extends RegistryAlg[IO] {
+class Registries(uri: URI, tokenProvider: Option[TokenProvider]) extends RegistryAlg[IO] {
   protected val logger: LoggerTakingImplicit[FlowId] = Logger.takingImplicit[FlowId](classOf[Registries])
 
   val baseUri: Uri = Uri.unsafeFromString(uri.toString)
@@ -26,7 +26,7 @@ class Registries(uri: URI, oAuth2TokenProvider: Option[OAuth2TokenProvider]) ext
     val baseHeaders = List(Header("X-Flow-ID", flowId.id))
 
     for {
-      headers <- addAuth(baseHeaders, oAuth2TokenProvider)
+      headers <- addAuth(baseHeaders, tokenProvider)
       request = Request[IO](GET, uri, headers = Headers(headers))
       _       = logger.debug(request.toString)
       response <- httpClient.fetch[List[String]](request) {
@@ -41,7 +41,7 @@ class Registries(uri: URI, oAuth2TokenProvider: Option[OAuth2TokenProvider]) ext
     val baseHeaders = List(Header("X-Flow-ID", flowId.id))
 
     for {
-      headers <- addAuth(baseHeaders, oAuth2TokenProvider)
+      headers <- addAuth(baseHeaders, tokenProvider)
       request = Request[IO](GET, uri, headers = Headers(headers))
       _       = logger.debug(request.toString)
       response <- httpClient.fetch[List[String]](request) {

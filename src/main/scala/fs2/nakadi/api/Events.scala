@@ -3,6 +3,7 @@ package fs2.nakadi.api
 import java.net.URI
 
 import cats.effect.IO
+import cats.syntax.applicative._
 import com.typesafe.scalalogging.{Logger, LoggerTakingImplicit}
 import org.http4s.{Header, Headers, Request, Status, Uri}
 import org.http4s.Method.POST
@@ -15,7 +16,7 @@ trait EventAlg[F[_]] {
   def publish[T: Encoder](name: EventTypeName, events: List[Event[T]])(implicit flowId: FlowId): F[Unit]
 }
 
-class Events(uri: URI, oAuth2TokenProvider: Option[OAuth2TokenProvider]) extends EventAlg[IO] {
+class Events(uri: URI, tokenProvider: Option[TokenProvider]) extends EventAlg[IO] {
   protected val logger: LoggerTakingImplicit[FlowId] = Logger.takingImplicit[FlowId](classOf[Events])
 
   val baseUri: Uri = Uri.unsafeFromString(uri.toString)
@@ -25,11 +26,11 @@ class Events(uri: URI, oAuth2TokenProvider: Option[OAuth2TokenProvider]) extends
     val baseHeaders = List(Header("X-Flow-ID", flowId.id))
 
     for {
-      headers <- addAuth(baseHeaders, oAuth2TokenProvider)
+      headers <- addAuth(baseHeaders, tokenProvider)
       request = Request[IO](POST, uri, headers = Headers(headers)).withEntity(events)
       _       = logger.debug(request.toString)
       response <- httpClient.fetch[Unit](request) {
-                   case Status.Successful(_) => IO.pure(())
+                   case Status.Successful(_) => ().pure[IO]
                    case Status.UnprocessableEntity(r) =>
                      r.as[List[BatchItemResponse]].flatMap(e => IO.raiseError(EventValidation(e)))
                    case r => r.as[String].flatMap(e => IO.raiseError(GeneralError(e)))

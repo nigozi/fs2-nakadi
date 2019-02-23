@@ -3,6 +3,7 @@ package fs2.nakadi.api
 import java.net.URI
 
 import cats.effect.IO
+import cats.syntax.applicative._
 import cats.syntax.option._
 import com.typesafe.scalalogging.{Logger, LoggerTakingImplicit}
 import org.http4s.{Header, Headers, Request, Status, Uri}
@@ -23,7 +24,7 @@ trait EventTypeAlg[F[_]] {
   def delete(name: EventTypeName)(implicit flowId: FlowId = randomFlowId()): F[Unit]
 }
 
-class EventTypes(uri: URI, oAuth2TokenProvider: Option[OAuth2TokenProvider]) extends EventTypeAlg[IO] {
+class EventTypes(uri: URI, tokenProvider: Option[TokenProvider]) extends EventTypeAlg[IO] {
   protected val logger: LoggerTakingImplicit[FlowId] = Logger.takingImplicit[FlowId](classOf[EventTypes])
 
   val baseUri: Uri = Uri.unsafeFromString(uri.toString)
@@ -33,7 +34,7 @@ class EventTypes(uri: URI, oAuth2TokenProvider: Option[OAuth2TokenProvider]) ext
     val baseHeaders = List(Header("X-Flow-ID", flowId.id))
 
     for {
-      headers <- addAuth(baseHeaders, oAuth2TokenProvider)
+      headers <- addAuth(baseHeaders, tokenProvider)
       request = Request[IO](GET, uri, headers = Headers(headers))
       _       = logger.debug(request.toString)
       response <- httpClient.fetch[List[EventType]](request) {
@@ -48,11 +49,11 @@ class EventTypes(uri: URI, oAuth2TokenProvider: Option[OAuth2TokenProvider]) ext
     val baseHeaders = List(Header("X-Flow-ID", flowId.id))
 
     for {
-      headers <- addAuth(baseHeaders, oAuth2TokenProvider)
+      headers <- addAuth(baseHeaders, tokenProvider)
       request = Request[IO](POST, uri, headers = Headers(headers)).withEntity(eventType)
       _       = logger.debug(request.toString)
       response <- httpClient.fetch[Unit](request) {
-                   case Status.Successful(_) => IO.pure(())
+                   case Status.Successful(_) => ().pure[IO]
                    case r                    => r.as[String].flatMap(e => IO.raiseError(GeneralError(e)))
                  }
     } yield response
@@ -63,11 +64,11 @@ class EventTypes(uri: URI, oAuth2TokenProvider: Option[OAuth2TokenProvider]) ext
     val baseHeaders = List(Header("X-Flow-ID", flowId.id))
 
     for {
-      headers <- addAuth(baseHeaders, oAuth2TokenProvider)
+      headers <- addAuth(baseHeaders, tokenProvider)
       request = Request[IO](GET, uri, headers = Headers(headers))
       _       = logger.debug(request.toString)
       response <- httpClient.fetch[Option[EventType]](request) {
-                   case Status.NotFound(_)   => IO.pure(None)
+                   case Status.NotFound(_)   => None.pure[IO]
                    case Status.Successful(l) => l.as[EventType].map(_.some)
                    case r                    => r.as[String].flatMap(e => IO.raiseError(GeneralError(e)))
                  }
@@ -79,11 +80,11 @@ class EventTypes(uri: URI, oAuth2TokenProvider: Option[OAuth2TokenProvider]) ext
     val baseHeaders = List(Header("X-Flow-ID", flowId.id))
 
     for {
-      headers <- addAuth(baseHeaders, oAuth2TokenProvider)
+      headers <- addAuth(baseHeaders, tokenProvider)
       request = Request[IO](PUT, uri, headers = Headers(headers)).withEntity(eventType)
       _       = logger.debug(request.toString)
       response <- httpClient.fetch[Unit](request) {
-                   case Status.Successful(_) => IO.pure(())
+                   case Status.Successful(_) => ().pure[IO]
                    case r                    => r.as[String].flatMap(e => IO.raiseError(GeneralError(e)))
                  }
     } yield response
@@ -94,11 +95,11 @@ class EventTypes(uri: URI, oAuth2TokenProvider: Option[OAuth2TokenProvider]) ext
     val baseHeaders = List(Header("X-Flow-ID", flowId.id))
 
     for {
-      headers <- addAuth(baseHeaders, oAuth2TokenProvider)
+      headers <- addAuth(baseHeaders, tokenProvider)
       request = Request[IO](DELETE, uri, headers = Headers(headers))
       _       = logger.debug(request.toString)
       response <- httpClient.fetch[Unit](request) {
-                   case Status.Successful(l) => IO.pure(())
+                   case Status.Successful(l) => ().pure[IO]
                    case r                    => r.as[String].flatMap(e => IO.raiseError(GeneralError(e)))
                  }
     } yield response

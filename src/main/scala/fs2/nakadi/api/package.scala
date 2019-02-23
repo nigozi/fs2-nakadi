@@ -17,7 +17,7 @@ import org.http4s.Credentials.Token
 import org.http4s.circe._
 import org.slf4j.MDC
 
-import fs2.nakadi.model.{FlowId, OAuth2Token, OAuth2TokenProvider}
+import fs2.nakadi.model.{FlowId, Token, TokenProvider}
 import io.circe.{Decoder, Encoder}
 
 package object api {
@@ -41,11 +41,11 @@ package object api {
     }
   }
 
-  private[api] def toHeader(oAuth2Token: OAuth2Token): Header =
+  private[api] def toHeader(oAuth2Token: Token): Header =
     Authorization(Token(CaseInsensitiveString("Bearer"), oAuth2Token.token))
 
   private[api] def addAuth(baseHeaders: List[Header],
-    oAuth2TokenProvider: Option[OAuth2TokenProvider]): IO[List[Header]] =
+    oAuth2TokenProvider: Option[TokenProvider]): IO[List[Header]] =
     oAuth2TokenProvider match {
       case Some(tp) => tp.provider.apply().map(toHeader).map(_ :: baseHeaders)
       case None     => IO.pure(baseHeaders)
