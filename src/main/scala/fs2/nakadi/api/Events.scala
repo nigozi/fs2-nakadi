@@ -1,7 +1,5 @@
 package fs2.nakadi.api
 
-import java.net.URI
-
 import cats.effect.IO
 import cats.syntax.applicative._
 import com.typesafe.scalalogging.{Logger, LoggerTakingImplicit}
@@ -16,10 +14,12 @@ trait EventAlg[F[_]] {
   def publish[T: Encoder](name: EventTypeName, events: List[Event[T]])(implicit flowId: FlowId): F[Unit]
 }
 
-class Events(uri: URI, tokenProvider: Option[TokenProvider]) extends EventAlg[IO] {
+class Events(config: NakadiConfig) extends EventAlg[IO] {
   protected val logger: LoggerTakingImplicit[FlowId] = Logger.takingImplicit[FlowId](classOf[Events])
 
-  val baseUri: Uri = Uri.unsafeFromString(uri.toString)
+  private val baseUri       = Uri.unsafeFromString(config.uri.toString)
+  private val tokenProvider = config.tokenProvider
+  private val httpClient    = config.httpClient.getOrElse(defaultClient)
 
   def publish[T: Encoder](name: EventTypeName, events: List[Event[T]])(implicit flowId: FlowId): IO[Unit] = {
     val uri         = baseUri / "event-types" / name.name / "events"

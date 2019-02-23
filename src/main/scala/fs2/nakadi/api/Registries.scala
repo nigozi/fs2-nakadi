@@ -1,7 +1,5 @@
 package fs2.nakadi.api
 
-import java.net.URI
-
 import cats.effect.IO
 import com.typesafe.scalalogging.{Logger, LoggerTakingImplicit}
 import org.http4s.{Header, Headers, Request, Status, Uri}
@@ -16,10 +14,12 @@ trait RegistryAlg[F[_]] {
   def partitionStrategies(implicit flowId: FlowId): F[List[String]]
 }
 
-class Registries(uri: URI, tokenProvider: Option[TokenProvider]) extends RegistryAlg[IO] {
+class Registries(config: NakadiConfig) extends RegistryAlg[IO] {
   protected val logger: LoggerTakingImplicit[FlowId] = Logger.takingImplicit[FlowId](classOf[Registries])
 
-  val baseUri: Uri = Uri.unsafeFromString(uri.toString)
+  private val baseUri       = Uri.unsafeFromString(config.uri.toString)
+  private val tokenProvider = config.tokenProvider
+  private val httpClient    = config.httpClient.getOrElse(defaultClient)
 
   override def enrichmentStrategies(implicit flowId: FlowId): IO[List[String]] = {
     val uri         = baseUri / "registry" / "enrichment-strategies"

@@ -1,7 +1,5 @@
 package fs2.nakadi.api
 
-import java.net.URI
-
 import cats.effect.IO
 import cats.syntax.applicative._
 import cats.syntax.option._
@@ -24,10 +22,12 @@ trait EventTypeAlg[F[_]] {
   def delete(name: EventTypeName)(implicit flowId: FlowId = randomFlowId()): F[Unit]
 }
 
-class EventTypes(uri: URI, tokenProvider: Option[TokenProvider]) extends EventTypeAlg[IO] {
+class EventTypes(config: NakadiConfig) extends EventTypeAlg[IO] {
   protected val logger: LoggerTakingImplicit[FlowId] = Logger.takingImplicit[FlowId](classOf[EventTypes])
 
-  val baseUri: Uri = Uri.unsafeFromString(uri.toString)
+  private val baseUri       = Uri.unsafeFromString(config.uri.toString)
+  private val tokenProvider = config.tokenProvider
+  private val httpClient    = config.httpClient.getOrElse(defaultClient)
 
   override def list(implicit flowId: FlowId): IO[List[EventType]] = {
     val uri         = baseUri / "event-types"

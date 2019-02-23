@@ -8,13 +8,14 @@ import scala.concurrent.{ExecutionContext, ExecutionContextExecutorService}
 import scala.concurrent.ExecutionContext.Implicits.global
 
 import cats.effect.{ContextShift, IO}
+import cats.syntax.applicative._
 import com.typesafe.scalalogging.CanLog
 import org.http4s.{EntityDecoder, EntityEncoder, Header}
+import org.http4s
+import org.http4s.circe._
 import org.http4s.client.{Client, JavaNetClientBuilder}
 import org.http4s.headers.Authorization
 import org.http4s.util.CaseInsensitiveString
-import org.http4s.Credentials.Token
-import org.http4s.circe._
 import org.slf4j.MDC
 
 import fs2.nakadi.model.{FlowId, Token, TokenProvider}
@@ -26,7 +27,7 @@ package object api {
   private[api] val blockingEC: ExecutionContextExecutorService =
     ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(5))
 
-  private[api] val httpClient: Client[IO] = JavaNetClientBuilder(blockingEC).create[IO]
+  private[api] val defaultClient: Client[IO] = JavaNetClientBuilder(blockingEC).create[IO]
 
   private[api] def randomFlowId() = FlowId(UUID.randomUUID().toString)
 
@@ -41,18 +42,17 @@ package object api {
     }
   }
 
-  private[api] def toHeader(oAuth2Token: Token): Header =
-    Authorization(Token(CaseInsensitiveString("Bearer"), oAuth2Token.token))
+  private[api] def toHeader(token: Token): Header =
+    Authorization(http4s.Credentials.Token(CaseInsensitiveString("Bearer"), token.value))
 
-  private[api] def addAuth(baseHeaders: List[Header],
-    oAuth2TokenProvider: Option[TokenProvider]): IO[List[Header]] =
-    oAuth2TokenProvider match {
+  private[api] def addAuth(baseHeaders: List[Header], tokenProvider: Option[TokenProvider]): IO[List[Header]] =
+    tokenProvider match {
       case Some(tp) => tp.provider.apply().map(toHeader).map(_ :: baseHeaders)
-      case None     => IO.pure(baseHeaders)
+      case None     => baseHeaders.pure[IO]
     }
 
   private[api] implicit def listDecoder[T <: util.Collection[_]: Decoder](
-    implicit ed: EntityDecoder[IO, T]): EntityDecoder[IO, List[T]] =
+      implicit ed: EntityDecoder[IO, T]): EntityDecoder[IO, List[T]] =
     jsonOf[IO, List[T]]
 
   private[api] implicit def entityEncoder[T](implicit e: Encoder[T]): EntityEncoder[IO, T] =
