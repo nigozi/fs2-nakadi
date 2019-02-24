@@ -40,9 +40,8 @@ class EventTypes(config: NakadiConfig) extends EventTypeAlg[IO] with Implicits {
       response <- httpClient
                    .fetch[List[EventType]](request) {
                      case Status.Successful(l) => l.as[List[EventType]]
-                     case r                    => r.as[String].flatMap(e => IO.raiseError(GeneralError(e)))
+                     case r                    => r.as[String].flatMap(e => IO.raiseError(ServerError(r.status.code, e)))
                    }
-                   .handleErrorWith(e => IO.raiseError(GeneralError(e.getLocalizedMessage)))
     } yield response
   }
 
@@ -57,9 +56,8 @@ class EventTypes(config: NakadiConfig) extends EventTypeAlg[IO] with Implicits {
       response <- httpClient
                    .fetch[Unit](request) {
                      case Status.Successful(_) => ().pure[IO]
-                     case r                    => r.as[String].flatMap(e => IO.raiseError(GeneralError(e)))
+                     case r                    => r.as[String].flatMap(e => IO.raiseError(ServerError(r.status.code, e)))
                    }
-                   .handleErrorWith(e => IO.raiseError(GeneralError(e.getLocalizedMessage)))
     } yield response
   }
 
@@ -75,9 +73,8 @@ class EventTypes(config: NakadiConfig) extends EventTypeAlg[IO] with Implicits {
                    .fetch[Option[EventType]](request) {
                      case Status.NotFound(_)   => None.pure[IO]
                      case Status.Successful(l) => l.as[EventType].map(_.some)
-                     case r                    => r.as[String].flatMap(e => IO.raiseError(GeneralError(e)))
+                     case r                    => r.as[String].flatMap(e => IO.raiseError(ServerError(r.status.code, e)))
                    }
-                   .handleErrorWith(e => IO.raiseError(GeneralError(e.getLocalizedMessage)))
     } yield response
   }
 
@@ -92,9 +89,8 @@ class EventTypes(config: NakadiConfig) extends EventTypeAlg[IO] with Implicits {
       response <- httpClient
                    .fetch[Unit](request) {
                      case Status.Successful(_) => ().pure[IO]
-                     case r                    => r.as[String].flatMap(e => IO.raiseError(GeneralError(e)))
+                     case r                    => r.as[String].flatMap(e => IO.raiseError(ServerError(r.status.code, e)))
                    }
-                   .handleErrorWith(e => IO.raiseError(GeneralError(e.getLocalizedMessage)))
     } yield response
   }
 
@@ -109,9 +105,8 @@ class EventTypes(config: NakadiConfig) extends EventTypeAlg[IO] with Implicits {
       response <- httpClient
                    .fetch[Unit](request) {
                      case Status.Successful(_) => ().pure[IO]
-                     case r                    => r.as[String].flatMap(e => IO.raiseError(GeneralError(e)))
+                     case r                    => r.as[String].flatMap(e => IO.raiseError(ServerError(r.status.code, e)))
                    }
-                   .handleErrorWith(e => IO.raiseError(GeneralError(e.getLocalizedMessage)))
     } yield response
   }
 }

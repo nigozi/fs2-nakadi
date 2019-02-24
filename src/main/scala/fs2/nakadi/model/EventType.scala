@@ -5,8 +5,8 @@ import java.time.OffsetDateTime
 import scala.collection.immutable
 
 import cats.effect.IO
-import org.http4s.circe.{jsonEncoderOf, jsonOf}
 import org.http4s.{EntityDecoder, EntityEncoder}
+import org.http4s.circe.{jsonEncoderOf, jsonOf}
 
 import enumeratum._
 import io.circe.{Decoder, Encoder, Json, JsonObject}
@@ -87,6 +87,9 @@ object EnrichmentStrategy extends Enum[EnrichmentStrategy] {
     enumeratum.Circe.encoder(EnrichmentStrategy)
   implicit val decoder: Decoder[EnrichmentStrategy] =
     enumeratum.Circe.decoder(EnrichmentStrategy)
+
+  implicit val entityEncoder: EntityEncoder[IO, EnrichmentStrategy] = jsonEncoderOf[IO, EnrichmentStrategy]
+  implicit val entityDecoder: EntityDecoder[IO, EnrichmentStrategy] = jsonOf[IO, EnrichmentStrategy]
 }
 
 sealed abstract class PartitionStrategy(val id: String) extends EnumEntry with Product with Serializable {
@@ -103,6 +106,9 @@ object PartitionStrategy extends Enum[PartitionStrategy] {
     enumeratum.Circe.encoder(PartitionStrategy)
   implicit val decoder: Decoder[PartitionStrategy] =
     enumeratum.Circe.decoder(PartitionStrategy)
+
+  implicit val entityEncoder: EntityEncoder[IO, PartitionStrategy] = jsonEncoderOf[IO, PartitionStrategy]
+  implicit val entityDecoder: EntityDecoder[IO, PartitionStrategy] = jsonOf[IO, PartitionStrategy]
 }
 
 sealed abstract class CleanupPolicy(val id: String) extends EnumEntry with Product with Serializable {

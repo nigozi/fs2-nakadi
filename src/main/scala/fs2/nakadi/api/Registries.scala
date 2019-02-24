@@ -9,9 +9,9 @@ import fs2.nakadi.error._
 import fs2.nakadi.model._
 
 trait RegistryAlg[F[_]] {
-  def enrichmentStrategies(implicit flowId: FlowId): F[List[String]]
+  def enrichmentStrategies(implicit flowId: FlowId = randomFlowId()): F[List[EnrichmentStrategy]]
 
-  def partitionStrategies(implicit flowId: FlowId): F[List[String]]
+  def partitionStrategies(implicit flowId: FlowId = randomFlowId()): F[List[PartitionStrategy]]
 }
 
 class Registries(config: NakadiConfig) extends RegistryAlg[IO] with Implicits {
@@ -21,7 +21,7 @@ class Registries(config: NakadiConfig) extends RegistryAlg[IO] with Implicits {
   private val tokenProvider = config.tokenProvider
   private val httpClient    = config.httpClient.getOrElse(defaultClient)
 
-  override def enrichmentStrategies(implicit flowId: FlowId): IO[List[String]] = {
+  override def enrichmentStrategies(implicit flowId: FlowId): IO[List[EnrichmentStrategy]] = {
     val uri         = baseUri / "registry" / "enrichment-strategies"
     val baseHeaders = List(Header("X-Flow-ID", flowId.id))
 
@@ -30,15 +30,14 @@ class Registries(config: NakadiConfig) extends RegistryAlg[IO] with Implicits {
       request = Request[IO](GET, uri, headers = Headers(headers))
       _       = logger.debug(request.toString)
       response <- httpClient
-                   .fetch[List[String]](request) {
-                     case Status.Successful(l) => l.as[List[String]]
-                     case r                    => r.as[String].flatMap(e => IO.raiseError(GeneralError(e)))
+                   .fetch[List[EnrichmentStrategy]](request) {
+                     case Status.Successful(l) => l.as[List[EnrichmentStrategy]]
+                     case r                    => r.as[String].flatMap(e => IO.raiseError(ServerError(r.status.code, e)))
                    }
-                   .handleErrorWith(e => IO.raiseError(GeneralError(e.getLocalizedMessage)))
     } yield response
   }
 
-  override def partitionStrategies(implicit flowId: FlowId): IO[List[String]] = {
+  override def partitionStrategies(implicit flowId: FlowId): IO[List[PartitionStrategy]] = {
     val uri         = baseUri / "registry" / "partition-strategies"
     val baseHeaders = List(Header("X-Flow-ID", flowId.id))
 
@@ -47,11 +46,10 @@ class Registries(config: NakadiConfig) extends RegistryAlg[IO] with Implicits {
       request = Request[IO](GET, uri, headers = Headers(headers))
       _       = logger.debug(request.toString)
       response <- httpClient
-                   .fetch[List[String]](request) {
-                     case Status.Successful(l) => l.as[List[String]]
-                     case r                    => r.as[String].flatMap(e => IO.raiseError(GeneralError(e)))
+                   .fetch[List[PartitionStrategy]](request) {
+                     case Status.Successful(l) => l.as[List[PartitionStrategy]]
+                     case r                    => r.as[String].flatMap(e => IO.raiseError(ServerError(r.status.code, e)))
                    }
-                   .handleErrorWith(e => IO.raiseError(GeneralError(e.getLocalizedMessage)))
     } yield response
   }
 }

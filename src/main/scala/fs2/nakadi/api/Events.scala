@@ -11,7 +11,8 @@ import fs2.nakadi.model._
 import io.circe.Encoder
 
 trait EventAlg[F[_]] {
-  def publish[T: Encoder](name: EventTypeName, events: List[Event[T]])(implicit flowId: FlowId): F[Unit]
+  def publish[T: Encoder](name: EventTypeName, events: List[Event[T]])(
+      implicit flowId: FlowId = randomFlowId()): F[Unit]
 }
 
 class Events(config: NakadiConfig) extends EventAlg[IO] with Implicits {
@@ -34,9 +35,8 @@ class Events(config: NakadiConfig) extends EventAlg[IO] with Implicits {
                      case Status.Successful(_) => ().pure[IO]
                      case Status.UnprocessableEntity(r) =>
                        r.as[List[BatchItemResponse]].flatMap(e => IO.raiseError(EventValidation(e)))
-                     case r => r.as[String].flatMap(e => IO.raiseError(GeneralError(e)))
+                     case r => r.as[String].flatMap(e => IO.raiseError(ServerError(r.status.code, e)))
                    }
-                   .handleErrorWith(e => IO.raiseError(GeneralError(e.getLocalizedMessage)))
     } yield response
   }
 }
