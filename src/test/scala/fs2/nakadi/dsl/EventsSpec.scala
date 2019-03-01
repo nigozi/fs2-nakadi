@@ -1,17 +1,19 @@
-package fs2.nakadi.api
+package fs2.nakadi.dsl
+
 import java.net.URI
 import java.util.UUID
 
 import cats.effect.IO
+import fs2.nakadi.Implicits
+import fs2.nakadi.error.{BatchItemResponse, EventValidation, PublishingStatus, Step}
+import fs2.nakadi.model.Event.Business
+import fs2.nakadi.model.{EventId, EventTypeName, Metadata, NakadiConfig}
+import io.circe.Json
+import io.circe.syntax._
 import org.http4s.HttpApp
 import org.http4s.client.Client
 import org.http4s.dsl.io._
 import org.scalatest.{FlatSpec, Matchers}
-
-import fs2.nakadi.error.{BatchItemResponse, EventValidation, PublishingStatus, Step}
-import fs2.nakadi.model.{EventId, EventTypeName, Metadata, NakadiConfig}
-import fs2.nakadi.model.Event.Business
-import io.circe.syntax._
 
 class EventsSpec extends FlatSpec with Matchers with Implicits {
   private val validationError = BatchItemResponse(
@@ -21,20 +23,21 @@ class EventsSpec extends FlatSpec with Matchers with Implicits {
     detail = None
   )
 
-  private val event = Business("""{"foo": "bar"}""".asJson, Metadata())
+  private val event  = Business("""{"foo": "bar"}""".asJson, Metadata())
+  private val eventF = Events[Json]
+
+  import eventF._
 
   "Events" should "publish events" in {
-    val config   = NakadiConfig(uri = new URI(""), httpClient = Some(client()))
-    val api      = new Events(config)
-    val response = api.publish(EventTypeName("test"), List(event))
+    implicit val config: NakadiConfig = NakadiConfig(uri = new URI(""), httpClient = Some(client()))
+    val response                      = publish(EventTypeName("test"), List(event)).foldMap(compiler)
 
     noException should be thrownBy response.unsafeRunSync()
   }
 
   it should "return error when publish fails" in {
-    val config   = NakadiConfig(uri = new URI(""), httpClient = Some(client(success = false)))
-    val api      = new Events(config)
-    val response = api.publish(EventTypeName("test"), List(event))
+    implicit val config: NakadiConfig = NakadiConfig(uri = new URI(""), httpClient = Some(client(success = false)))
+    val response                      = publish(EventTypeName("test"), List(event)).foldMap(compiler)
 
     val caught = intercept[EventValidation] {
       response.unsafeRunSync()

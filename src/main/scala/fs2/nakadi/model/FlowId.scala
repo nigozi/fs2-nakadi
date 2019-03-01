@@ -1,7 +1,7 @@
 package fs2.nakadi.model
 
-import io.circe.{Decoder, Encoder}
 import io.circe.derivation._
+import io.circe.{Decoder, Encoder}
 
 case class FlowId(id: String) extends AnyVal
 

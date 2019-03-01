@@ -1,15 +1,13 @@
 package fs2.nakadi.model
 
+import io.circe.derivation._
 import io.circe.{Decoder, Encoder}
-import io.circe.syntax._
 
 final case class EventId(id: String) extends AnyVal
 
 object EventId {
-  implicit val encoder: Encoder[EventId] =
-    Encoder.instance[EventId](_.id.asJson)
-  implicit val decoder: Decoder[EventId] =
-    Decoder[String].map(EventId.apply)
+  implicit val encoder: Encoder[EventId] = deriveEncoder(renaming.snakeCase)
+  implicit val decoder: Decoder[EventId] = deriveDecoder(renaming.snakeCase)
 
   def random: EventId = EventId(java.util.UUID.randomUUID().toString)
 }

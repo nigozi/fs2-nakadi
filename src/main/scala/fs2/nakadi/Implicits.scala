@@ -1,9 +1,9 @@
-package fs2.nakadi.api
-import cats.effect.IO
-import org.http4s.{EntityDecoder, EntityEncoder}
-import org.http4s.circe._
+package fs2.nakadi
 
+import cats.effect.IO
 import io.circe.{Decoder, Encoder}
+import org.http4s.circe._
+import org.http4s.{EntityDecoder, EntityEncoder}
 
 trait Implicits {
   implicit def listDecoder[T: Decoder](implicit ed: EntityDecoder[IO, T]): EntityDecoder[IO, List[T]] =

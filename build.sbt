@@ -1,7 +1,7 @@
 name := """fs2-nakadi"""
 
-val http4sVersion          = "0.19.0"
-val circeVersion           = "0.10.1"
+val http4sVersion = "0.19.0"
+val circeVersion  = "0.10.1"
 
 scalaVersion in ThisBuild := "2.12.8"
 
@@ -10,7 +10,6 @@ organization := "org.zalando"
 fork in Test := true
 parallelExecution in Test := true
 testForkedParallel in Test := true
-
 
 scalacOptions ++= Seq(
   "-deprecation", // Emit warning and location for usages of deprecated APIs.
@@ -56,6 +55,7 @@ scalacOptions ++= Seq(
 addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.9")
 
 libraryDependencies ++= Seq(
+  "org.typelevel"              %% "cats-free"           % "1.6.0",
   "io.circe"                   %% "circe-core"          % circeVersion,
   "io.circe"                   %% "circe-java8"         % circeVersion,
   "io.circe"                   %% "circe-parser"        % circeVersion,

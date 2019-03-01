@@ -2,41 +2,35 @@ package fs2.nakadi.model
 
 import java.time.OffsetDateTime
 
-import scala.collection.immutable
-
 import cats.effect.IO
-import org.http4s.{EntityDecoder, EntityEncoder}
-import org.http4s.circe.{jsonEncoderOf, jsonOf}
-
 import enumeratum._
-import io.circe.{Decoder, Encoder, Json, JsonObject}
+import io.circe.derivation._
 import io.circe.syntax._
+import io.circe.{Decoder, Encoder, Json, JsonObject}
+import org.http4s.circe.{jsonEncoderOf, jsonOf}
+import org.http4s.{EntityDecoder, EntityEncoder}
+
+import scala.collection.immutable
 
 final case class WriteScope(id: String) extends AnyVal
 
 object WriteScope {
-  implicit val encoder: Encoder[WriteScope] =
-    Encoder.instance[WriteScope](_.id.asJson)
-  implicit val decoder: Decoder[WriteScope] =
-    Decoder[String].map(WriteScope.apply)
+  implicit val encoder: Encoder[WriteScope] = deriveEncoder(renaming.snakeCase)
+  implicit val decoder: Decoder[WriteScope] = deriveDecoder(renaming.snakeCase)
 }
 
 final case class ReadScope(id: String) extends AnyVal
 
 object ReadScope {
-  implicit val encoder: Encoder[ReadScope] =
-    Encoder.instance[ReadScope](_.id.asJson)
-  implicit val decoder: Decoder[ReadScope] =
-    Decoder[String].map(ReadScope.apply)
+  implicit val encoder: Encoder[ReadScope] = deriveEncoder(renaming.snakeCase)
+  implicit val decoder: Decoder[ReadScope] = deriveDecoder(renaming.snakeCase)
 }
 
 final case class EventTypeName(name: String) extends AnyVal
 
 object EventTypeName {
-  implicit val encoder: Encoder[EventTypeName] =
-    Encoder.instance[EventTypeName](_.name.asJson)
-  implicit val decoder: Decoder[EventTypeName] =
-    Decoder[String].map(EventTypeName.apply)
+  implicit val encoder: Encoder[EventTypeName] = deriveEncoder(renaming.snakeCase)
+  implicit val decoder: Decoder[EventTypeName] = deriveDecoder(renaming.snakeCase)
 }
 
 sealed abstract class Audience(val id: String) extends EnumEntry with Product with Serializable {
@@ -51,11 +45,8 @@ object Audience extends Enum[Audience] {
   case object ExternalPartner      extends Audience("external-partner")
   case object ExternalPublic       extends Audience("external-public")
 
-  implicit val encoder: Encoder[Audience] =
-    enumeratum.Circe.encoder(Audience)
-
-  implicit val decoder: Decoder[Audience] =
-    enumeratum.Circe.decoder(Audience)
+  implicit val encoder: Encoder[Audience] = enumeratum.Circe.encoder(Audience)
+  implicit val decoder: Decoder[Audience] = enumeratum.Circe.decoder(Audience)
 }
 
 sealed abstract class Category(val id: String) extends EnumEntry with Product with Serializable {
@@ -68,11 +59,8 @@ object Category extends Enum[Category] {
   case object Data      extends Category("data")
   case object Undefined extends Category("undefined")
 
-  implicit val encoder: Encoder[Category] =
-    enumeratum.Circe.encoder(Category)
-
-  implicit val decoder: Decoder[Category] =
-    enumeratum.Circe.decoder(Category)
+  implicit val encoder: Encoder[Category] = enumeratum.Circe.encoder(Category)
+  implicit val decoder: Decoder[Category] = enumeratum.Circe.decoder(Category)
 }
 
 sealed abstract class EnrichmentStrategy(val id: String) extends EnumEntry with Product with Serializable {
@@ -83,10 +71,8 @@ object EnrichmentStrategy extends Enum[EnrichmentStrategy] {
   val values: immutable.IndexedSeq[EnrichmentStrategy] = findValues
   case object MetadataEnrichment extends EnrichmentStrategy("metadata_enrichment")
 
-  implicit val encoder: Encoder[EnrichmentStrategy] =
-    enumeratum.Circe.encoder(EnrichmentStrategy)
-  implicit val decoder: Decoder[EnrichmentStrategy] =
-    enumeratum.Circe.decoder(EnrichmentStrategy)
+  implicit val encoder: Encoder[EnrichmentStrategy] = enumeratum.Circe.encoder(EnrichmentStrategy)
+  implicit val decoder: Decoder[EnrichmentStrategy] = enumeratum.Circe.decoder(EnrichmentStrategy)
 
   implicit val entityEncoder: EntityEncoder[IO, EnrichmentStrategy] = jsonEncoderOf[IO, EnrichmentStrategy]
   implicit val entityDecoder: EntityDecoder[IO, EnrichmentStrategy] = jsonOf[IO, EnrichmentStrategy]
@@ -102,10 +88,8 @@ object PartitionStrategy extends Enum[PartitionStrategy] {
   case object UserDefined extends PartitionStrategy("user_defined")
   case object Hash        extends PartitionStrategy("hash")
 
-  implicit val encoder: Encoder[PartitionStrategy] =
-    enumeratum.Circe.encoder(PartitionStrategy)
-  implicit val decoder: Decoder[PartitionStrategy] =
-    enumeratum.Circe.decoder(PartitionStrategy)
+  implicit val encoder: Encoder[PartitionStrategy] = enumeratum.Circe.encoder(PartitionStrategy)
+  implicit val decoder: Decoder[PartitionStrategy] = enumeratum.Circe.decoder(PartitionStrategy)
 
   implicit val entityEncoder: EntityEncoder[IO, PartitionStrategy] = jsonEncoderOf[IO, PartitionStrategy]
   implicit val entityDecoder: EntityDecoder[IO, PartitionStrategy] = jsonOf[IO, PartitionStrategy]
@@ -120,10 +104,8 @@ object CleanupPolicy extends Enum[CleanupPolicy] {
   case object Compact extends CleanupPolicy("compact")
   case object Delete  extends CleanupPolicy("delete")
 
-  implicit val encoder: Encoder[CleanupPolicy] =
-    enumeratum.Circe.encoder(CleanupPolicy)
-  implicit val decoder: Decoder[CleanupPolicy] =
-    enumeratum.Circe.decoder(CleanupPolicy)
+  implicit val encoder: Encoder[CleanupPolicy] = enumeratum.Circe.encoder(CleanupPolicy)
+  implicit val decoder: Decoder[CleanupPolicy] = enumeratum.Circe.decoder(CleanupPolicy)
 }
 
 sealed abstract class CompatibilityMode(val id: String) extends EnumEntry with Product with Serializable {
@@ -136,11 +118,8 @@ object CompatibilityMode extends Enum[CompatibilityMode] {
   case object Forward    extends CompatibilityMode("forward")
   case object None       extends CompatibilityMode("none")
 
-  implicit val encoder: Encoder[CompatibilityMode] =
-    enumeratum.Circe.encoder(CompatibilityMode)
-
-  implicit val decoder: Decoder[CompatibilityMode] =
-    enumeratum.Circe.decoder(CompatibilityMode)
+  implicit val encoder: Encoder[CompatibilityMode] = enumeratum.Circe.encoder(CompatibilityMode)
+  implicit val decoder: Decoder[CompatibilityMode] = enumeratum.Circe.decoder(CompatibilityMode)
 }
 
 final case class EventTypeSchema(version: Option[String],
@@ -166,17 +145,12 @@ object EventTypeSchema {
 
     case object JsonSchema extends Type("json_schema")
 
-    implicit val encoder: Encoder[Type] =
-      enumeratum.Circe.encoder(Type)
-    implicit val decoder: Decoder[Type] =
-      enumeratum.Circe.decoder(Type)
+    implicit val encoder: Encoder[Type] = enumeratum.Circe.encoder(Type)
+    implicit val decoder: Decoder[Type] = enumeratum.Circe.decoder(Type)
   }
 
-  implicit val encoder: Encoder[EventTypeSchema] =
-    Encoder.forProduct4("version", "created_at", "type", "schema")(x => EventTypeSchema.unapply(x).get)
-
-  implicit val decoder: Decoder[EventTypeSchema] =
-    Decoder.forProduct4("version", "created_at", "type", "schema")(EventTypeSchema.apply)
+  implicit val encoder: Encoder[EventTypeSchema] = deriveEncoder(renaming.snakeCase)
+  implicit val decoder: Decoder[EventTypeSchema] = deriveDecoder(renaming.snakeCase)
 }
 
 final case class EventTypeStatistics(messagesPerMinute: Int,
@@ -185,37 +159,15 @@ final case class EventTypeStatistics(messagesPerMinute: Int,
                                      writeParallelism: Int)
 
 object EventTypeStatistics {
-  implicit val encoder: Encoder[EventTypeStatistics] =
-    Encoder.forProduct4(
-      "messages_per_minute",
-      "message_size",
-      "read_parallelism",
-      "write_parallelism"
-    )(x => EventTypeStatistics.unapply(x).get)
-
-  implicit val decoder: Decoder[EventTypeStatistics] =
-    Decoder.forProduct4(
-      "messages_per_minute",
-      "message_size",
-      "read_parallelism",
-      "write_parallelism"
-    )(EventTypeStatistics.apply)
+  implicit val encoder: Encoder[EventTypeStatistics] = deriveEncoder(renaming.snakeCase)
+  implicit val decoder: Decoder[EventTypeStatistics] = deriveDecoder(renaming.snakeCase)
 }
 
 final case class AuthorizationAttribute(dataType: String, value: String)
 
 object AuthorizationAttribute {
-  implicit val encoder: Encoder[AuthorizationAttribute] =
-    Encoder.forProduct2(
-      "data_type",
-      "value"
-    )(x => AuthorizationAttribute.unapply(x).get)
-
-  implicit val decoder: Decoder[AuthorizationAttribute] =
-    Decoder.forProduct2(
-      "data_type",
-      "value"
-    )(AuthorizationAttribute.apply)
+  implicit val encoder: Encoder[AuthorizationAttribute] = deriveEncoder(renaming.snakeCase)
+  implicit val decoder: Decoder[AuthorizationAttribute] = deriveDecoder(renaming.snakeCase)
 }
 
 final case class EventTypeAuthorization(admins: List[AuthorizationAttribute],
@@ -223,33 +175,15 @@ final case class EventTypeAuthorization(admins: List[AuthorizationAttribute],
                                         writers: List[AuthorizationAttribute])
 
 object EventTypeAuthorization {
-  implicit val encoder: Encoder[EventTypeAuthorization] =
-    Encoder.forProduct3(
-      "admins",
-      "readers",
-      "writers"
-    )(x => EventTypeAuthorization.unapply(x).get)
-
-  implicit val decoder: Decoder[EventTypeAuthorization] =
-    Decoder.forProduct3(
-      "admins",
-      "readers",
-      "writers"
-    )(EventTypeAuthorization.apply)
+  implicit val encoder: Encoder[EventTypeAuthorization] = deriveEncoder(renaming.snakeCase)
+  implicit val decoder: Decoder[EventTypeAuthorization] = deriveDecoder(renaming.snakeCase)
 }
 
 final case class EventTypeOptions(retentionTime: Int)
 
 object EventTypeOptions {
-  implicit val encoder: Encoder[EventTypeOptions] =
-    Encoder.forProduct1(
-      "retention_time"
-    )(x => EventTypeOptions.unapply(x).get)
-
-  implicit val decoder: Decoder[EventTypeOptions] =
-    Decoder.forProduct1(
-      "retention_time"
-    )(EventTypeOptions.apply)
+  implicit val encoder: Encoder[EventTypeOptions] = deriveEncoder(renaming.snakeCase)
+  implicit val decoder: Decoder[EventTypeOptions] = deriveDecoder(renaming.snakeCase)
 }
 
 final case class EventType(
@@ -275,49 +209,8 @@ final case class EventType(
 )
 
 object EventType {
-  implicit val encoder: Encoder[EventType] = Encoder.forProduct19(
-    "name",
-    "owning_application",
-    "category",
-    "enrichment_strategies",
-    "partition_strategy",
-    "compatibility_mode",
-    "schema",
-    "partition_key_fields",
-    "cleanup_policy",
-    "default_statistic",
-    "options",
-    "authorization",
-    "write_scopes",
-    "read_scopes",
-    "audience",
-    "ordering_key_fields",
-    "ordering_instance_ids",
-    "created_at",
-    "updated_at"
-  )(x => EventType.unapply(x).get)
-
-  implicit val decoder: Decoder[EventType] = Decoder.forProduct19(
-    "name",
-    "owning_application",
-    "category",
-    "enrichment_strategies",
-    "partition_strategy",
-    "compatibility_mode",
-    "schema",
-    "partition_key_fields",
-    "cleanup_policy",
-    "default_statistic",
-    "options",
-    "authorization",
-    "write_scopes",
-    "read_scopes",
-    "audience",
-    "ordering_key_fields",
-    "ordering_instance_ids",
-    "created_at",
-    "updated_at"
-  )(EventType.apply)
+  implicit val encoder: Encoder[EventType] = deriveEncoder(renaming.snakeCase)
+  implicit val decoder: Decoder[EventType] = deriveDecoder(renaming.snakeCase)
 
   implicit val entityEncoder: EntityEncoder[IO, EventType] = jsonEncoderOf[IO, EventType]
   implicit val entityDecoder: EntityDecoder[IO, EventType] = jsonOf[IO, EventType]

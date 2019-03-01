@@ -1,14 +1,13 @@
 package fs2.nakadi.error
 
-import scala.collection.immutable
-
 import cats.effect.IO
-import org.http4s.{EntityDecoder, EntityEncoder}
-import org.http4s.circe._
-
 import enumeratum.{Enum, EnumEntry}
 import fs2.nakadi.model.EventId
 import io.circe.{Decoder, Encoder}
+import org.http4s.circe._
+import org.http4s.{EntityDecoder, EntityEncoder}
+
+import scala.collection.immutable
 
 final case class BatchItemResponse(eid: Option[EventId],
                                    publishingStatus: PublishingStatus,

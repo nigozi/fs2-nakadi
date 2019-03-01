@@ -2,83 +2,42 @@ package fs2.nakadi.model
 
 import java.time.OffsetDateTime
 
-import scala.collection.immutable
-
 import cats.effect.IO
-import org.http4s.{EntityDecoder, EntityEncoder}
-import org.http4s.circe.{jsonEncoderOf, jsonOf}
-
 import enumeratum.{Enum, EnumEntry}
-import io.circe.{Decoder, Encoder, Json}
 import io.circe.Decoder.Result
+import io.circe.derivation._
 import io.circe.syntax._
+import io.circe.{Decoder, Encoder}
+import org.http4s.circe.{jsonEncoderOf, jsonOf}
+import org.http4s.{EntityDecoder, EntityEncoder}
+
+import scala.collection.immutable
 
 sealed abstract class Event[T](val data: T)
 
 object Event {
-  final case class DataChange[T](override val data: T,
-                                 dataType: String,
-                                 dataOperation: DataOperation,
-                                 metadata: Metadata)
+  final case class DataChange[T](override val data: T, dataType: String, dataOp: DataOperation, metadata: Metadata)
       extends Event[T](data)
 
   object DataChange {
-    implicit def encoder[T](implicit encoder: Encoder[T]): Encoder[DataChange[T]] =
-      Encoder.forProduct4(
-        "data",
-        "data_type",
-        "data_op",
-        "metadata"
-      )(x => DataChange.unapply(x).get)
-
-    implicit def decoder[T](implicit decoder: Decoder[T]): Decoder[DataChange[T]] =
-      Decoder.forProduct4(
-        "data",
-        "data_type",
-        "data_op",
-        "metadata"
-      )(DataChange.apply)
+    implicit def encoder[T](implicit encoder: Encoder[T]): Encoder[DataChange[T]] = deriveEncoder(renaming.snakeCase)
+    implicit def decoder[T](implicit decoder: Decoder[T]): Decoder[DataChange[T]] = deriveDecoder(renaming.snakeCase)
   }
 
   final case class Business[T](override val data: T, metadata: Metadata = Metadata()) extends Event[T](data)
 
   object Business {
-    implicit def encoder[T](implicit encoder: Encoder[T]): Encoder[Business[T]] =
-      Encoder.instance[Business[T]] { x =>
-        val metadata = Json.obj(
-          "metadata" -> x.metadata.asJson
-        )
-        val data = x.data.asJson
-        data.deepMerge(metadata)
-      }
-
-    implicit def decoder[T](
-        implicit decoder: Decoder[T]
-    ): Decoder[Business[T]] =
-      Decoder.instance[Business[T]] { c =>
-        for {
-          metadata <- c.downField("metadata").as[Metadata]
-          data     <- c.as[T]
-        } yield Business(data, metadata)
-      }
+    implicit def encoder[T](implicit encoder: Encoder[T]): Encoder[Business[T]] = deriveEncoder(renaming.snakeCase)
+    implicit def decoder[T](implicit decoder: Decoder[T]): Decoder[Business[T]] =
+      deriveDecoder(renaming.snakeCase)
   }
 
   final case class Undefined[T](override val data: T) extends Event[T](data)
 
   object Undefined {
-    implicit def encoder[T](implicit encoder: Encoder[T]): Encoder[Undefined[T]] =
-      Encoder.instance[Undefined[T]] { x =>
-        x.data.asJson
-      }
-
-    implicit def decoder[T](
-        implicit decoder: Decoder[T]
-    ): Decoder[Undefined[T]] =
-      Decoder.instance[Undefined[T]] { c =>
-        for {
-          data <- c.as[T]
-        } yield Undefined(data)
-      }
+    implicit def encoder[T](implicit encoder: Encoder[T]): Encoder[Undefined[T]] = deriveEncoder(renaming.snakeCase)
+    implicit def decoder[T](implicit decoder: Decoder[T]): Decoder[Undefined[T]] =
+      deriveDecoder(renaming.snakeCase)
   }
 
   implicit def encoder[T](implicit encoder: Encoder[T]): Encoder[Event[T]] =
@@ -143,28 +102,6 @@ final case class Metadata(eid: EventId = EventId.random,
                           spanCtx: Option[SpanCtx] = None)
 
 object Metadata {
-
-  implicit val encoder: Encoder[Metadata] = Encoder.forProduct9(
-    "eid",
-    "occurred_at",
-    "event_type",
-    "received_at",
-    "parent_eids",
-    "flow_id",
-    "partition",
-    "partition_compaction_key",
-    "span_ctx"
-  )(x => Metadata.unapply(x).get)
-
-  implicit val decoder: Decoder[Metadata] = Decoder.forProduct9(
-    "eid",
-    "occurred_at",
-    "event_type",
-    "received_at",
-    "parent_eids",
-    "flow_id",
-    "partition",
-    "partition_compaction_key",
-    "span_ctx"
-  )(Metadata.apply)
+  implicit val encoder: Encoder[Metadata] = deriveEncoder(renaming.snakeCase)
+  implicit val decoder: Decoder[Metadata] = deriveDecoder(renaming.snakeCase)
 }
