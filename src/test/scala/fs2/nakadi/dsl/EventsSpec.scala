@@ -23,21 +23,18 @@ class EventsSpec extends FlatSpec with Matchers with Implicits {
     detail = None
   )
 
-  private val event  = Business("""{"foo": "bar"}""".asJson, Metadata())
-  private val eventF = Events[Json]
-
-  import eventF._
+  private val event = Business("""{"foo": "bar"}""".asJson, Metadata())
 
   "Events" should "publish events" in {
-    implicit val config: NakadiConfig = NakadiConfig(uri = new URI(""), httpClient = Some(client()))
-    val response                      = publish(EventTypeName("test"), List(event)).foldMap(compiler)
+    implicit val config: NakadiConfig[IO] = NakadiConfig(uri = new URI(""), httpClient = Some(client()))
+    val response                          = Events[IO].publish[Json](EventTypeName("test"), List(event))
 
     noException should be thrownBy response.unsafeRunSync()
   }
 
   it should "return error when publish fails" in {
-    implicit val config: NakadiConfig = NakadiConfig(uri = new URI(""), httpClient = Some(client(success = false)))
-    val response                      = publish(EventTypeName("test"), List(event)).foldMap(compiler)
+    implicit val config: NakadiConfig[IO] = NakadiConfig(uri = new URI(""), httpClient = Some(client(success = false)))
+    val response                          = Events[IO].publish[Json](EventTypeName("test"), List(event))
 
     val caught = intercept[EventValidation] {
       response.unsafeRunSync()

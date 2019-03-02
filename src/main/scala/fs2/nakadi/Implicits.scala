@@ -1,16 +1,20 @@
 package fs2.nakadi
 
-import cats.effect.IO
+import cats.effect.{ContextShift, IO, Sync}
 import io.circe.{Decoder, Encoder}
 import org.http4s.circe._
 import org.http4s.{EntityDecoder, EntityEncoder}
 
-trait Implicits {
-  implicit def listDecoder[T: Decoder](implicit ed: EntityDecoder[IO, T]): EntityDecoder[IO, List[T]] =
-    jsonOf[IO, List[T]]
+import scala.concurrent.ExecutionContext.Implicits.global
 
-  implicit def listEncoder[T: Encoder](implicit ed: EntityEncoder[IO, T]): EntityEncoder[IO, List[T]] =
-    jsonEncoderOf[IO, List[T]]
+trait Implicits {
+  implicit def listDecoder[F[_]: Sync, T: Decoder](implicit ed: EntityDecoder[F, T]): EntityDecoder[F, List[T]] =
+    jsonOf[F, List[T]]
+
+  implicit def listEncoder[F[_]: Sync, T: Encoder](implicit ed: EntityEncoder[F, T]): EntityEncoder[F, List[T]] =
+    jsonEncoderOf[F, List[T]]
+
+  implicit val cs: ContextShift[IO] = IO.contextShift(global)
 }
 
 object Implicits extends Implicits

@@ -1,6 +1,6 @@
 package fs2.nakadi.error
 
-import cats.effect.IO
+import cats.effect.Sync
 import enumeratum.{Enum, EnumEntry}
 import fs2.nakadi.model.EventId
 import io.circe.{Decoder, Encoder}
@@ -31,8 +31,11 @@ object BatchItemResponse {
       "detail"
     )(BatchItemResponse.apply)
 
-  implicit val entityEncoder: EntityEncoder[IO, BatchItemResponse] = jsonEncoderOf[IO, BatchItemResponse]
-  implicit val entityDecoder: EntityDecoder[IO, BatchItemResponse] = jsonOf[IO, BatchItemResponse]
+//  implicit val entityEncoder: EntityEncoder[IO, BatchItemResponse] = jsonEncoderOf[IO, BatchItemResponse]
+//  implicit val entityDecoder: EntityDecoder[IO, BatchItemResponse] = jsonOf[IO, BatchItemResponse]
+
+  implicit def entityEncoder[F[_]: Sync]: EntityEncoder[F, BatchItemResponse] = jsonEncoderOf[F, BatchItemResponse]
+  implicit def entityDecoder[F[_]: Sync]: EntityDecoder[F, BatchItemResponse] = jsonOf[F, BatchItemResponse]
 }
 
 sealed abstract class PublishingStatus(val id: String) extends EnumEntry with Product with Serializable {

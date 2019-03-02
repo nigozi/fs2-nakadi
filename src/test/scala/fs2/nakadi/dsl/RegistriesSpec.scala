@@ -4,7 +4,6 @@ import java.net.URI
 
 import cats.effect.IO
 import fs2.nakadi.Implicits
-import fs2.nakadi.dsl.Registries._
 import fs2.nakadi.model.EnrichmentStrategy.MetadataEnrichment
 import fs2.nakadi.model.NakadiConfig
 import fs2.nakadi.model.PartitionStrategy.{Hash, Random, UserDefined}
@@ -14,16 +13,16 @@ import org.http4s.dsl.io._
 import org.scalatest.{FlatSpec, Matchers}
 
 class RegistriesSpec extends FlatSpec with Matchers with Implicits {
-  private implicit val config: NakadiConfig = NakadiConfig(uri = new URI(""), httpClient = Some(client()))
+  private implicit val config: NakadiConfig[IO] = NakadiConfig(uri = new URI(""), httpClient = Some(client()))
 
   "Registries" should "return enrichment strategies" in {
-    val response = enrichmentStrategies.foldMap(compiler).unsafeRunSync()
+    val response = Registries[IO].enrichmentStrategies.unsafeRunSync()
 
     response shouldBe List(MetadataEnrichment)
   }
 
   it should "return partition strategies" in {
-    val response = partitionStrategies.foldMap(compiler).unsafeRunSync()
+    val response = Registries[IO].partitionStrategies.unsafeRunSync()
 
     response shouldBe List(Random, UserDefined, Hash)
   }
