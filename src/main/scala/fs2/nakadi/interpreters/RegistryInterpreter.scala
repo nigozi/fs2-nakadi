@@ -16,12 +16,12 @@ class RegistryInterpreter[F[_]: Async: ContextShift](implicit ME: MonadError[F, 
 
   def enrichmentStrategies(implicit config: NakadiConfig[F], flowId: FlowId): F[List[EnrichmentStrategy]] = {
     val uri        = Uri.unsafeFromString(config.uri.toString) / "registry" / "enrichment-strategies"
-    val request    = Request[F](GET, uri)
+    val req        = Request[F](GET, uri)
     val httpClient = config.httpClient.getOrElse(defaultClient[F])
 
     for {
-      headers <- baseHeaders(config)
-      response <- httpClient.fetch[List[EnrichmentStrategy]](request.withHeaders(headers)) {
+      request <- addBaseHeaders(req, config)
+      response <- httpClient.fetch[List[EnrichmentStrategy]](request) {
                    case Status.Successful(l) => l.as[List[EnrichmentStrategy]]
                    case r                    => r.as[String].flatMap(e => ME.raiseError(ServerError(r.status.code, e)))
                  }
@@ -30,12 +30,12 @@ class RegistryInterpreter[F[_]: Async: ContextShift](implicit ME: MonadError[F, 
 
   def partitionStrategies(implicit config: NakadiConfig[F], flowId: FlowId): F[List[PartitionStrategy]] = {
     val uri        = Uri.unsafeFromString(config.uri.toString) / "registry" / "partition-strategies"
-    val request    = Request[F](GET, uri)
+    val req        = Request[F](GET, uri)
     val httpClient = config.httpClient.getOrElse(defaultClient[F])
 
     for {
-      headers <- baseHeaders(config)
-      response <- httpClient.fetch[List[PartitionStrategy]](request.withHeaders(headers)) {
+      request <- addBaseHeaders(req, config)
+      response <- httpClient.fetch[List[PartitionStrategy]](request) {
                    case Status.Successful(l) => l.as[List[PartitionStrategy]]
                    case r                    => r.as[String].flatMap(e => ME.raiseError(ServerError(r.status.code, e)))
                  }

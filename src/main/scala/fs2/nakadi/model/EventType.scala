@@ -29,8 +29,10 @@ object ReadScope {
 final case class EventTypeName(name: String) extends AnyVal
 
 object EventTypeName {
-  implicit val encoder: Encoder[EventTypeName] = deriveEncoder(renaming.snakeCase)
-  implicit val decoder: Decoder[EventTypeName] = deriveDecoder(renaming.snakeCase)
+  implicit val eventTypeNameEncoder: Encoder[EventTypeName] =
+    Encoder.instance[EventTypeName](_.name.asJson)
+  implicit val eventTypeNameDecoder: Decoder[EventTypeName] =
+    Decoder[String].map(EventTypeName.apply)
 }
 
 sealed abstract class Audience(val id: String) extends EnumEntry with Product with Serializable {

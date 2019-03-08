@@ -1,6 +1,6 @@
 name := """fs2-nakadi"""
 
-val http4sVersion = "0.19.0"
+val http4sVersion = "0.20.0-M6"
 val circeVersion  = "0.10.1"
 
 scalaVersion in ThisBuild := "2.12.8"
@@ -67,6 +67,7 @@ libraryDependencies ++= Seq(
   "org.http4s"                 %% "http4s-blaze-server" % http4sVersion,
   "org.http4s"                 %% "http4s-core"         % http4sVersion,
   "org.http4s"                 %% "http4s-circe"        % http4sVersion,
+  "org.http4s"                 %% "jawn-fs2"            % "0.14.2",
   "com.beachape"               %% "enumeratum-circe"    % "1.5.20",
   "com.typesafe.scala-logging" %% "scala-logging"       % "3.8.0",
   "ch.qos.logback"             % "logback-classic"      % "1.1.7",
