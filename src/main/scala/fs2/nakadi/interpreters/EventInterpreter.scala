@@ -5,6 +5,7 @@ import cats.effect.{Async, ContextShift}
 import cats.syntax.applicative._
 import cats.syntax.flatMap._
 import cats.syntax.functor._
+import fs2.nakadi.dsl.Events
 import fs2.nakadi.error.{BatchItemResponse, EventValidation}
 import fs2.nakadi.model._
 import io.circe.Encoder
@@ -12,7 +13,9 @@ import org.http4s.circe._
 import org.http4s.dsl.io._
 import org.http4s.{Request, Status, Uri}
 
-class EventInterpreter[F[_]: Async: ContextShift](implicit ME: MonadError[F, Throwable]) extends HttpClient {
+class EventInterpreter[F[_]: Async: ContextShift](implicit ME: MonadError[F, Throwable])
+    extends HttpClient
+    with Events[F] {
 
   def publish[T](name: EventTypeName, events: List[Event[T]])(implicit config: NakadiConfig[F],
                                                               enc: Encoder[T]): F[Unit] = {

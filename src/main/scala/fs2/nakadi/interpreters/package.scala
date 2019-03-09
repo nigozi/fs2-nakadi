@@ -6,10 +6,12 @@ import cats.syntax.flatMap._
 import cats.syntax.functor._
 import cats.{Monad, MonadError}
 import fs2.nakadi.error.ServerError
+import fs2.nakadi.model.StreamId
 import io.circe.parser._
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder, Json, Printer}
 import org.http4s.circe._
+import org.http4s.util.CaseInsensitiveString
 import org.http4s.{EntityDecoder, Response}
 
 package object interpreters {
@@ -28,6 +30,14 @@ package object interpreters {
       .map(e => ServerError(r.status.code, Some(e)))
       .handleError(_ => ServerError(r.status.code, None))
       .flatMap(e => ME.raiseError(e))
+
+  private[interpreters] def streamId[F[_]](r: Response[F]): StreamId =
+    r.headers
+      .get(CaseInsensitiveString(xNakadiStreamIdHeader))
+      .map(h => StreamId(h.value)) match {
+      case Some(sid) => sid
+      case None      => sys.error(s"$xNakadiStreamIdHeader header is missing")
+    }
 
   implicit def entityDecoder[F[_]: Sync, T: Decoder]: EntityDecoder[F, T] = jsonOf[F, T]
 }

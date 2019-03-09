@@ -1,21 +1,30 @@
 package fs2.nakadi.interpreters
-import cats.effect.{Async, ContextShift}
+import cats.effect.{Async, Concurrent, ContextShift}
 import cats.syntax.either._
 import cats.syntax.flatMap._
 import cats.syntax.functor._
 import cats.syntax.option._
 import cats.{Monad, MonadError}
+import com.typesafe.scalalogging.Logger
 import fs2.Stream
+import fs2.nakadi.dsl.Subscriptions
+import fs2.nakadi.error.ServerError
 import fs2.nakadi.model._
 import io.circe.{Decoder, Json}
 import jawnfs2._
 import org.http4s.circe._
 import org.http4s.dsl.io._
-import org.http4s.{Header, Request, Status, Uri}
+import org.http4s.{Header, Request, Response, Status, Uri}
 import org.typelevel.jawn.RawFacade
 
-class SubscriptionInterpreter[F[_]: Async: ContextShift](implicit ME: MonadError[F, Throwable], M: Monad[F])
-    extends HttpClient {
+import scala.util.Try
+
+class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](implicit ME: MonadError[F, Throwable], M: Monad[F])
+    extends HttpClient
+    with Subscriptions[F] {
+  private lazy val logger = Logger[SubscriptionInterpreter[F]]
+
+  implicit val f: RawFacade[Json] = io.circe.jawn.CirceSupportParser.facade
 
   def create(subscription: Subscription)(implicit config: NakadiConfig[F]): F[Subscription] = {
     val uri        = Uri.unsafeFromString(config.uri.toString) / "subscriptions"
@@ -130,6 +139,8 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift](implicit ME: MonadError
     val httpClient   = config.httpClient.getOrElse(defaultClient[F])
     val streamHeader = Header(xNakadiStreamIdHeader, streamId.id)
 
+    logger.info(s"committing cursor, subscription id: ${subscriptionId.id}, stream id: ${streamId.id}")
+
     for {
       request <- addBaseHeaders(req, config, List(streamHeader))
       response <- httpClient.fetch[Option[CommitCursorResponse]](request) {
@@ -159,11 +170,9 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift](implicit ME: MonadError
     } yield response
   }
 
-  def eventStream[T](subscriptionId: SubscriptionId, eventCallback: EventCallback[T], streamConfig: StreamConfig)(
+  def eventStream[T](subscriptionId: SubscriptionId, streamConfig: StreamConfig)(
       implicit config: NakadiConfig[F],
-      decoder: Decoder[T]): Stream[F, SubscriptionEvent[T]] = {
-    implicit val f: RawFacade[Json] = io.circe.jawn.CirceSupportParser.facade
-
+      decoder: Decoder[T]): Stream[F, StreamEvent[T]] = {
     val uri = Uri
       .unsafeFromString(s"${config.uri.toString}/subscriptions/${subscriptionId.id.toString}/events")
       .withOptionQueryParam("max_uncommitted_events", streamConfig.maxUncommittedEvents)
@@ -177,18 +186,63 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift](implicit ME: MonadError
     val httpClient = config.httpClient.getOrElse(defaultClient[F])
     val request    = addBaseHeaders(Request[F](GET, uri), config)
 
-    Stream
-      .eval(request)
-      .flatMap(
-        req =>
-          httpClient
-            .stream(req)
-            .flatMap(_.body.chunks.parseJsonStream)
-            .map(_.as[SubscriptionEvent[T]].valueOr(e => sys.error(s"Failed to decode the event: ${e.message}"))))
+    def parseResponse(resp: Response[F]): Stream[F, StreamEvent[T]] = resp.status match {
+      case Status.Ok =>
+        resp.body.chunks.parseJsonStream
+          .map(
+            _.as[SubscriptionEvent[T]]
+              .map(se => StreamEvent(se, streamId(resp)))
+              .valueOr(e => sys.error(s"failed to parse the response: ${e.message}")))
+      case Status.Conflict =>
+        logger.error(
+          s"no empty slot for the subscription, reconnect in ${config.noEmptySlotsCursorResetRetryDelay.toMillis} milliseconds")
+        Thread.sleep(config.noEmptySlotsCursorResetRetryDelay.toMillis)
+        eventStream(subscriptionId, streamConfig)(config, decoder)
+      case _ => throw ServerError(resp.status.code, None)
+    }
+
+    for {
+      req    <- Stream.eval(request)
+      resp   <- httpClient.stream(req)
+      parsed <- parseResponse(resp).handleErrorWith(e => Stream.raiseError(e))
+    } yield parsed
   }
+
+  def eventStreamManaged[T](parallelism: Int)(
+      subscriptionId: SubscriptionId,
+      eventCallback: EventCallback[T],
+      streamConfig: StreamConfig)(implicit config: NakadiConfig[F], decoder: Decoder[T]): Stream[F, Boolean] =
+    eventStream(subscriptionId, streamConfig)(config, decoder)
+      .through(r => processEvents(parallelism)(r, subscriptionId, eventCallback))
+
+  private def processEvents[T](parallelism: Int)(
+      stream: Stream[F, StreamEvent[T]],
+      subscriptionId: SubscriptionId,
+      callback: EventCallback[T])(implicit config: NakadiConfig[F]): Stream[F, Boolean] =
+    stream
+      .mapAsync(parallelism)(e =>
+        callback match {
+          case EventCallback.successPredicate(cb) =>
+            Try(cb(EventCallbackData(e.event, e.streamId))).toOption match {
+              case Some(true) =>
+                commitCursors(subscriptionId, SubscriptionCursor(List(e.event.cursor)), e.streamId).map(_.nonEmpty)
+              case _ =>
+                logger.debug("Event callback failed, not committing cursors")
+                M.pure(false)
+            }
+          case EventCallback.successAlways(cb) =>
+            Try(cb(EventCallbackData(e.event, e.streamId))).toOption match {
+              case Some(_) =>
+                commitCursors(subscriptionId, SubscriptionCursor(List(e.event.cursor)), e.streamId).map(_.nonEmpty)
+              case _ =>
+                logger.debug("Event callback failed, not committing cursors")
+                M.pure(false)
+            }
+      })
 }
 
 object SubscriptionInterpreter {
-  def apply[F[_]: Async: ContextShift](implicit ME: MonadError[F, Throwable], M: Monad[F]): SubscriptionInterpreter[F] =
+  def apply[F[_]: Async: ContextShift: Concurrent](implicit ME: MonadError[F, Throwable],
+                                                   M: Monad[F]): SubscriptionInterpreter[F] =
     new SubscriptionInterpreter[F]()
 }

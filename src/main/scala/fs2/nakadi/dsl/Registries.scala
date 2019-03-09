@@ -4,6 +4,7 @@ import cats.effect.IO
 import cats.tagless.finalAlg
 import fs2.nakadi.interpreters.RegistryInterpreter
 import fs2.nakadi.model.{EnrichmentStrategy, NakadiConfig, PartitionStrategy}
+import Implicits._
 
 @finalAlg
 trait Registries[F[_]] {
@@ -13,12 +14,5 @@ trait Registries[F[_]] {
 }
 
 object Registries {
-  implicit object ioInterpreter extends Registries[IO] with Implicits {
-
-    override def enrichmentStrategies(implicit config: NakadiConfig[IO]): IO[List[EnrichmentStrategy]] =
-      RegistryInterpreter[IO].enrichmentStrategies
-
-    override def partitionStrategies(implicit config: NakadiConfig[IO]): IO[List[PartitionStrategy]] =
-      RegistryInterpreter[IO].partitionStrategies
-  }
+  implicit object ioInterpreter extends RegistryInterpreter[IO]
 }

@@ -1,6 +1,7 @@
 package fs2.nakadi.dsl
 import cats.effect.IO
 import cats.tagless.finalAlg
+import fs2.nakadi.dsl.Implicits._
 import fs2.nakadi.interpreters.EventTypeInterpreter
 import fs2.nakadi.model._
 
@@ -18,20 +19,5 @@ trait EventTypes[F[_]] {
 }
 
 object EventTypes {
-  implicit object ioInterpreter extends EventTypes[IO] with Implicits {
-    override def list(implicit config: NakadiConfig[IO]): IO[List[EventType]] =
-      EventTypeInterpreter[IO].list
-
-    override def create(eventType: EventType)(implicit config: NakadiConfig[IO]): IO[Unit] =
-      EventTypeInterpreter[IO].create(eventType)
-
-    override def get(name: EventTypeName)(implicit config: NakadiConfig[IO]): IO[Option[EventType]] =
-      EventTypeInterpreter[IO].get(name)
-
-    override def update(name: EventTypeName, eventType: EventType)(implicit config: NakadiConfig[IO]): IO[Unit] =
-      EventTypeInterpreter[IO].update(name, eventType)
-
-    override def delete(name: EventTypeName)(implicit config: NakadiConfig[IO]): IO[Unit] =
-      EventTypeInterpreter[IO].delete(name)
-  }
+  implicit object ioInterpreter extends EventTypeInterpreter[IO]
 }

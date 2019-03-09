@@ -184,3 +184,5 @@ final case class StreamConfig(maxUncommittedEvents: Option[Int] = None,
                               commitTimeout: Option[FiniteDuration] = None,
                               streamTimeout: Option[FiniteDuration] = None,
                               streamKeepAliveLimit: Option[Int] = None)
+
+final case class StreamEvent[T](event: SubscriptionEvent[T], streamId: StreamId)
