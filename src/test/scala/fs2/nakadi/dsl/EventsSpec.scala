@@ -4,7 +4,6 @@ import java.net.URI
 import java.util.UUID
 
 import cats.effect.IO
-import fs2.nakadi.Implicits
 import fs2.nakadi.error.{BatchItemResponse, EventValidation, PublishingStatus, Step}
 import fs2.nakadi.model.Event.Business
 import fs2.nakadi.model.{EventId, EventTypeName, Metadata, NakadiConfig}
@@ -15,7 +14,7 @@ import org.http4s.client.Client
 import org.http4s.dsl.io._
 import org.scalatest.{FlatSpec, Matchers}
 
-class EventsSpec extends FlatSpec with Matchers with Implicits {
+class EventsSpec extends FlatSpec with Matchers {
   private val validationError = BatchItemResponse(
     eid = Some(EventId(UUID.randomUUID().toString)),
     publishingStatus = PublishingStatus.Failed,

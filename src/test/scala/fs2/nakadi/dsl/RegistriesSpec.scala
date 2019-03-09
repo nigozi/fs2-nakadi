@@ -3,7 +3,6 @@ package fs2.nakadi.dsl
 import java.net.URI
 
 import cats.effect.IO
-import fs2.nakadi.Implicits
 import fs2.nakadi.model.EnrichmentStrategy.MetadataEnrichment
 import fs2.nakadi.model.NakadiConfig
 import fs2.nakadi.model.PartitionStrategy.{Hash, Random, UserDefined}
@@ -12,7 +11,7 @@ import org.http4s.client.Client
 import org.http4s.dsl.io._
 import org.scalatest.{FlatSpec, Matchers}
 
-class RegistriesSpec extends FlatSpec with Matchers with Implicits {
+class RegistriesSpec extends FlatSpec with Matchers {
   private implicit val config: NakadiConfig[IO] = NakadiConfig(uri = new URI(""), httpClient = Some(client()))
 
   "Registries" should "return enrichment strategies" in {

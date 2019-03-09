@@ -3,7 +3,6 @@ package fs2.nakadi.dsl
 import java.net.URI
 
 import cats.effect.IO
-import fs2.nakadi.Implicits
 import fs2.nakadi.error.ServerError
 import fs2.nakadi.model.{Category, EventType, EventTypeName, NakadiConfig}
 import org.http4s.HttpApp
@@ -11,7 +10,7 @@ import org.http4s.client.Client
 import org.http4s.dsl.io._
 import org.scalatest.{FlatSpec, Matchers}
 
-class EventTypesSpec extends FlatSpec with Matchers with Implicits {
+class EventTypesSpec extends FlatSpec with Matchers {
   val eventType = EventType(
     name = EventTypeName("test"),
     owningApplication = "test-app",
@@ -45,7 +44,7 @@ class EventTypesSpec extends FlatSpec with Matchers with Implicits {
 
   it should "list event types" in {
     implicit val config: NakadiConfig[IO] = NakadiConfig(uri = new URI(""), httpClient = Some(client()))
-    val response                          = EventTypes[IO].getAll.unsafeRunSync()
+    val response                          = EventTypes[IO].list.unsafeRunSync()
 
     response shouldBe List(eventType)
   }

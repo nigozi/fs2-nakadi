@@ -2,37 +2,32 @@ package fs2.nakadi.model
 
 import java.time.OffsetDateTime
 
-import cats.effect.Sync
 import enumeratum._
 import io.circe.derivation._
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder, Json, JsonObject}
-import org.http4s.circe.{jsonEncoderOf, jsonOf}
-import org.http4s.{EntityDecoder, EntityEncoder}
 
 import scala.collection.immutable
 
 final case class WriteScope(id: String) extends AnyVal
 
 object WriteScope {
-  implicit val encoder: Encoder[WriteScope] = deriveEncoder(renaming.snakeCase)
-  implicit val decoder: Decoder[WriteScope] = deriveDecoder(renaming.snakeCase)
+  implicit val encoder: Encoder[WriteScope] = Encoder.instance[WriteScope](_.id.asJson)
+  implicit val decoder: Decoder[WriteScope] = Decoder[String].map(WriteScope.apply)
 }
 
 final case class ReadScope(id: String) extends AnyVal
 
 object ReadScope {
-  implicit val encoder: Encoder[ReadScope] = deriveEncoder(renaming.snakeCase)
-  implicit val decoder: Decoder[ReadScope] = deriveDecoder(renaming.snakeCase)
+  implicit val encoder: Encoder[ReadScope] = Encoder.instance[ReadScope](_.id.asJson)
+  implicit val decoder: Decoder[ReadScope] = Decoder[String].map(ReadScope.apply)
 }
 
 final case class EventTypeName(name: String) extends AnyVal
 
 object EventTypeName {
-  implicit val eventTypeNameEncoder: Encoder[EventTypeName] =
-    Encoder.instance[EventTypeName](_.name.asJson)
-  implicit val eventTypeNameDecoder: Decoder[EventTypeName] =
-    Decoder[String].map(EventTypeName.apply)
+  implicit val encoder: Encoder[EventTypeName] = Encoder.instance[EventTypeName](_.name.asJson)
+  implicit val decoder: Decoder[EventTypeName] = Decoder[String].map(EventTypeName.apply)
 }
 
 sealed abstract class Audience(val id: String) extends EnumEntry with Product with Serializable {
@@ -75,9 +70,6 @@ object EnrichmentStrategy extends Enum[EnrichmentStrategy] {
 
   implicit val encoder: Encoder[EnrichmentStrategy] = enumeratum.Circe.encoder(EnrichmentStrategy)
   implicit val decoder: Decoder[EnrichmentStrategy] = enumeratum.Circe.decoder(EnrichmentStrategy)
-
-  implicit def entityEncoder[F[_]: Sync]: EntityEncoder[F, EnrichmentStrategy] = jsonEncoderOf[F, EnrichmentStrategy]
-  implicit def entityDecoder[F[_]: Sync]: EntityDecoder[F, EnrichmentStrategy] = jsonOf[F, EnrichmentStrategy]
 }
 
 sealed abstract class PartitionStrategy(val id: String) extends EnumEntry with Product with Serializable {
@@ -92,9 +84,6 @@ object PartitionStrategy extends Enum[PartitionStrategy] {
 
   implicit val encoder: Encoder[PartitionStrategy] = enumeratum.Circe.encoder(PartitionStrategy)
   implicit val decoder: Decoder[PartitionStrategy] = enumeratum.Circe.decoder(PartitionStrategy)
-
-  implicit def entityEncoder[F[_]: Sync]: EntityEncoder[F, PartitionStrategy] = jsonEncoderOf[F, PartitionStrategy]
-  implicit def entityDecoder[F[_]: Sync]: EntityDecoder[F, PartitionStrategy] = jsonOf[F, PartitionStrategy]
 }
 
 sealed abstract class CleanupPolicy(val id: String) extends EnumEntry with Product with Serializable {
@@ -213,7 +202,4 @@ final case class EventType(
 object EventType {
   implicit val encoder: Encoder[EventType] = deriveEncoder(renaming.snakeCase)
   implicit val decoder: Decoder[EventType] = deriveDecoder(renaming.snakeCase)
-
-  implicit def entityEncoder[F[_]: Sync]: EntityEncoder[F, EventType] = jsonEncoderOf[F, EventType]
-  implicit def entityDecoder[F[_]: Sync]: EntityDecoder[F, EventType] = jsonOf[F, EventType]
 }

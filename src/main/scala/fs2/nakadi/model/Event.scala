@@ -2,14 +2,11 @@ package fs2.nakadi.model
 
 import java.time.OffsetDateTime
 
-import cats.effect.Sync
 import enumeratum.{Enum, EnumEntry}
 import io.circe.Decoder.Result
 import io.circe.derivation._
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder}
-import org.http4s.circe.{jsonEncoderOf, jsonOf}
-import org.http4s.{EntityDecoder, EntityEncoder}
 
 import scala.collection.immutable
 
@@ -68,11 +65,6 @@ object Event {
         }).joinRight
       }
     )
-
-  implicit def entityEncoder[F[_]: Sync, T](implicit enc: Encoder[Event[T]]): EntityEncoder[F, Event[T]] =
-    jsonEncoderOf[F, Event[T]]
-  implicit def entityDecoder[F[_]: Sync, T](implicit dec: Decoder[Event[T]]): EntityDecoder[F, Event[T]] =
-    jsonOf[F, Event[T]]
 }
 
 sealed abstract class DataOperation(val id: String) extends EnumEntry with Product with Serializable {
