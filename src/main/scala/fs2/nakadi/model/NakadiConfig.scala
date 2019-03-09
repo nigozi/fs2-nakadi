@@ -7,5 +7,5 @@ import scala.concurrent.duration.{FiniteDuration, _}
 
 case class NakadiConfig[F[_]](uri: URI,
                               tokenProvider: Option[TokenProvider[F]] = None,
-                              httpClient: Option[Client[F]] = None,
-                              noEmptySlotsCursorResetRetryDelay: FiniteDuration = 30.seconds)
+                              noEmptySlotsCursorResetRetryDelay: FiniteDuration = 30.seconds,
+                              httpClient: Option[Client[F]] = None)

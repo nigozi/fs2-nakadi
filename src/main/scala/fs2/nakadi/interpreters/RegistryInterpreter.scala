@@ -4,13 +4,12 @@ import cats.effect.{Async, ContextShift}
 import cats.syntax.flatMap._
 import cats.syntax.functor._
 import fs2.nakadi.dsl.Registries
+import fs2.nakadi.interpreters.HttpClient._
 import fs2.nakadi.model.{EnrichmentStrategy, NakadiConfig, PartitionStrategy}
 import org.http4s.dsl.io.GET
 import org.http4s.{Request, Status, Uri}
 
-class RegistryInterpreter[F[_]: Async: ContextShift](implicit ME: MonadError[F, Throwable])
-    extends HttpClient
-    with Registries[F] {
+class RegistryInterpreter[F[_]: Async: ContextShift](implicit ME: MonadError[F, Throwable]) extends Registries[F] {
 
   def enrichmentStrategies(implicit config: NakadiConfig[F]): F[List[EnrichmentStrategy]] = {
     val uri        = Uri.unsafeFromString(config.uri.toString) / "registry" / "enrichment-strategies"

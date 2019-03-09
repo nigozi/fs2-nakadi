@@ -9,6 +9,7 @@ import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import fs2.nakadi.dsl.Subscriptions
 import fs2.nakadi.error.ServerError
+import fs2.nakadi.interpreters.HttpClient._
 import fs2.nakadi.model._
 import io.circe.{Decoder, Json}
 import jawnfs2._
@@ -20,8 +21,7 @@ import org.typelevel.jawn.RawFacade
 import scala.util.Try
 
 class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](implicit ME: MonadError[F, Throwable], M: Monad[F])
-    extends HttpClient
-    with Subscriptions[F] {
+    extends Subscriptions[F] {
   private lazy val logger = Logger[SubscriptionInterpreter[F]]
 
   implicit val f: RawFacade[Json] = io.circe.jawn.CirceSupportParser.facade
