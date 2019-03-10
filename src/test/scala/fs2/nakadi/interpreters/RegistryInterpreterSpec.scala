@@ -12,7 +12,7 @@ import org.http4s.client.Client
 import org.http4s.dsl.io._
 import org.scalatest.{FlatSpec, Matchers}
 
-class RegistriesSpec extends FlatSpec with Matchers with Implicits with TestResources {
+class RegistryInterpreterSpec extends FlatSpec with Matchers with Implicits with TestResources {
   private implicit val config: NakadiConfig[IO] = NakadiConfig(uri = new URI(""))
 
   private val interpreter = new RegistryInterpreter[IO](client())

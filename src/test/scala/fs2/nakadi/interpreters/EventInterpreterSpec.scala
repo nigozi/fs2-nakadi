@@ -15,7 +15,7 @@ import org.http4s.client.Client
 import org.http4s.dsl.io._
 import org.scalatest.{FlatSpec, Matchers}
 
-class EventsSpec extends FlatSpec with Matchers with Implicits with TestResources {
+class EventInterpreterSpec extends FlatSpec with Matchers with Implicits with TestResources {
   implicit val config: NakadiConfig[IO] = NakadiConfig(uri = new URI(""))
 
   private val validationError = BatchItemResponse(

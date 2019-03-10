@@ -11,7 +11,7 @@ import org.http4s.client.Client
 import org.http4s.dsl.io._
 import org.scalatest.{FlatSpec, Matchers}
 
-class EventTypesSpec extends FlatSpec with Matchers with Implicits with TestResources {
+class EventTypeInterpreterSpec extends FlatSpec with Matchers with Implicits with TestResources {
   implicit val config: NakadiConfig[IO] = NakadiConfig(uri = new URI(""))
 
   val eventType = EventType(
