@@ -8,12 +8,14 @@ import cats.{Monad, MonadError}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import fs2.nakadi.dsl.Subscriptions
-import fs2.nakadi.error.ServerError
+import fs2.nakadi.error.{GeneralError, ServerError}
 import fs2.nakadi.model._
 import io.circe.{Decoder, Json}
 import jawnfs2._
 import org.http4s.circe._
 import org.http4s.dsl.io._
+import org.http4s.headers._
+import org.http4s.util.CaseInsensitiveString
 import org.http4s.{Header, Request, Response, Status, Uri}
 import org.typelevel.jawn.RawFacade
 
@@ -183,7 +185,7 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](implicit ME
       .withOptionQueryParam("commit_timeout", streamConfig.commitTimeout.map(_.toSeconds))
 
     val httpClient = config.httpClient.getOrElse(defaultClient[F])
-    val request    = addBaseHeaders(Request[F](GET, uri), config)
+    val request    = addBaseHeaders(Request[F](GET, uri), config, List(Connection(CaseInsensitiveString("keep-alive"))))
 
     def parseResponse(resp: Response[F]): Stream[F, StreamEvent[T]] = resp.status match {
       case Status.Ok =>
@@ -191,7 +193,7 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](implicit ME
           .map(
             _.as[SubscriptionEvent[T]]
               .map(se => StreamEvent(se, streamId(resp)))
-              .valueOr(e => sys.error(s"failed to parse the response: ${e.message}")))
+              .valueOr(e => throw GeneralError(s"failed to parse the response: ${e.message}")))
       case Status.Conflict =>
         logger.error(
           s"no empty slot for the subscription, reconnect in ${config.noEmptySlotsCursorResetRetryDelay.toMillis} milliseconds")
