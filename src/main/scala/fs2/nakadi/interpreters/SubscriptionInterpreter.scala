@@ -9,7 +9,6 @@ import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import fs2.nakadi.dsl.Subscriptions
 import fs2.nakadi.error.ServerError
-import fs2.nakadi.interpreters.HttpClient._
 import fs2.nakadi.model._
 import io.circe.{Decoder, Json}
 import jawnfs2._

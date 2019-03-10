@@ -7,7 +7,6 @@ import cats.syntax.flatMap._
 import cats.syntax.functor._
 import fs2.nakadi.dsl.Events
 import fs2.nakadi.error.{BatchItemResponse, EventValidation}
-import fs2.nakadi.interpreters.HttpClient._
 import fs2.nakadi.model._
 import io.circe.Encoder
 import org.http4s.circe._

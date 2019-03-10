@@ -5,7 +5,6 @@ import cats.syntax.functor._
 import cats.syntax.option._
 import cats.{Monad, MonadError}
 import fs2.nakadi.dsl.EventTypes
-import fs2.nakadi.interpreters.HttpClient._
 import fs2.nakadi.model._
 import org.http4s.circe._
 import org.http4s.dsl.io._
