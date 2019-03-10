@@ -17,7 +17,7 @@ class RegistryInterpreter[F[_]: Async: ContextShift](httpClient: Client[F])(impl
     val req = Request[F](GET, uri)
 
     for {
-      request <- addBaseHeaders(req, config)
+      request <- addHeaders(req, config)
       response <- httpClient.fetch[List[EnrichmentStrategy]](request) {
                    case Status.Successful(l) => l.as[List[EnrichmentStrategy]]
                    case r                    => throwServerError(r)
@@ -30,7 +30,7 @@ class RegistryInterpreter[F[_]: Async: ContextShift](httpClient: Client[F])(impl
     val req = Request[F](GET, uri)
 
     for {
-      request <- addBaseHeaders(req, config)
+      request <- addHeaders(req, config)
       response <- httpClient.fetch[List[PartitionStrategy]](request) {
                    case Status.Successful(l) => l.as[List[PartitionStrategy]]
                    case r                    => throwServerError(r)

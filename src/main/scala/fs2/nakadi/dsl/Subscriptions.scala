@@ -34,7 +34,7 @@ trait Subscriptions[F[_]] {
       implicit config: NakadiConfig[F],
       decoder: Decoder[T]): Stream[F, StreamEvent[T]]
 
-  def eventStreamManaged[T](parallelism: Int)(
+  def managedEventStream[T](parallelism: Int)(
       subscriptionId: SubscriptionId,
       eventCallback: EventCallback[T],
       streamConfig: StreamConfig)(implicit config: NakadiConfig[F], decoder: Decoder[T]): Stream[F, Boolean]

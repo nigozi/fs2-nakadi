@@ -23,7 +23,7 @@ class EventInterpreter[F[_]: Async: ContextShift](httpClient: Client[F])(implici
     val req = Request[F](POST, uri).withEntity(encode(events))
 
     for {
-      request <- addBaseHeaders(req, config)
+      request <- addHeaders(req, config)
       response <- httpClient.fetch[Unit](request) {
                    case Status.Successful(_) => ().pure[F]
                    case Status.UnprocessableEntity(r) =>

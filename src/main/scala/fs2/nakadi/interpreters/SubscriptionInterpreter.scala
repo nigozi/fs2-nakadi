@@ -35,7 +35,7 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient:
     val req = Request[F](POST, uri).withEntity(encode(subscription))
 
     for {
-      request <- addBaseHeaders(req, config)
+      request <- addHeaders(req, config)
       response <- httpClient.fetch[Subscription](request) {
                    case Status.Successful(l) => l.as[Subscription]
                    case r                    => throwServerError(r)
@@ -82,7 +82,7 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient:
     val req = Request[F](GET, uriWithEventType)
 
     for {
-      request <- addBaseHeaders(req, config)
+      request <- addHeaders(req, config)
       response <- httpClient.fetch[SubscriptionQuery](request) {
                    case Status.Successful(l) => l.as[SubscriptionQuery]
                    case r                    => throwServerError(r)
@@ -95,7 +95,7 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient:
     val req = Request[F](GET, uri)
 
     for {
-      request <- addBaseHeaders(req, config)
+      request <- addHeaders(req, config)
       response <- httpClient.fetch[Option[Subscription]](request) {
                    case Status.NotFound(_)   => M.pure(None)
                    case Status.Successful(l) => l.as[Subscription].map(_.some)
@@ -109,7 +109,7 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient:
     val req = Request[F](DELETE, uri)
 
     for {
-      request <- addBaseHeaders(req, config)
+      request <- addHeaders(req, config)
       response <- httpClient.fetch[Unit](request) {
                    case Status.Successful(l) => M.pure(())
                    case r                    => throwServerError(r)
@@ -122,7 +122,7 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient:
     val req = Request[F](GET, uri)
 
     for {
-      request <- addBaseHeaders(req, config)
+      request <- addHeaders(req, config)
       response <- httpClient.fetch[Option[SubscriptionCursor]](request) {
                    case Status.NotFound(_) | Status.NoContent(_) => M.pure(None)
                    case Status.Successful(l)                     => l.as[SubscriptionCursor].map(_.some)
@@ -135,12 +135,12 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient:
       implicit config: NakadiConfig[F]): F[Option[CommitCursorResponse]] = {
     val uri          = Uri.unsafeFromString(config.uri.toString) / "subscriptions" / subscriptionId.id.toString / "cursors"
     val req          = Request[F](POST, uri).withEntity(encode(subscriptionCursor))
-    val streamHeader = Header(xNakadiStreamIdHeader, streamId.id)
+    val streamHeader = Header(XNakadiStreamId, streamId.id)
 
     logger.info(s"committing cursor, subscription id: ${subscriptionId.id}, stream id: ${streamId.id}")
 
     for {
-      request <- addBaseHeaders(req, config, List(streamHeader))
+      request <- addHeaders(req, config, List(streamHeader))
       response <- httpClient.fetch[Option[CommitCursorResponse]](request) {
                    case Status.NotFound(_) | Status.NoContent(_) => M.pure(None)
                    case Status.Successful(l)                     => l.as[CommitCursorResponse].map(_.some)
@@ -158,7 +158,7 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient:
     }
 
     for {
-      request <- addBaseHeaders(req, config)
+      request <- addHeaders(req, config)
       response <- httpClient.fetch[Boolean](request) {
                    case Status.NotFound(_) | Status.NoContent(_) => M.pure(false)
                    case Status.Successful(_)                     => M.pure(true)
@@ -180,7 +180,7 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient:
       .withOptionQueryParam("stream_keep_alive_limit", streamConfig.streamKeepAliveLimit)
       .withOptionQueryParam("commit_timeout", streamConfig.commitTimeout.map(_.toSeconds))
 
-    val request = addBaseHeaders(Request[F](GET, uri), config, List(Connection(CaseInsensitiveString("keep-alive"))))
+    val request = addHeaders(Request[F](GET, uri), config, List(Connection(CaseInsensitiveString("keep-alive"))))
 
     def parseResponse(resp: Response[F]): Stream[F, StreamEvent[T]] = resp.status match {
       case Status.Ok =>
@@ -204,7 +204,7 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient:
     } yield parsed
   }
 
-  def eventStreamManaged[T](parallelism: Int)(
+  def managedEventStream[T](parallelism: Int)(
       subscriptionId: SubscriptionId,
       eventCallback: EventCallback[T],
       streamConfig: StreamConfig)(implicit config: NakadiConfig[F], decoder: Decoder[T]): Stream[F, Boolean] =

@@ -20,7 +20,7 @@ class EventTypeInterpreter[F[_]: Async: ContextShift](httpClient: Client[F])(imp
     val req = Request[F](GET, uri)
 
     for {
-      request <- addBaseHeaders(req, config)
+      request <- addHeaders(req, config)
       response <- httpClient.fetch[List[EventType]](request) {
                    case Status.Successful(l) => l.as[List[EventType]]
                    case r                    => throwServerError(r)
@@ -33,7 +33,7 @@ class EventTypeInterpreter[F[_]: Async: ContextShift](httpClient: Client[F])(imp
     val req = Request[F](POST, uri).withEntity(encode(eventType))
 
     for {
-      request <- addBaseHeaders(req, config)
+      request <- addHeaders(req, config)
       response <- httpClient.fetch[Unit](request) {
                    case Status.Successful(_) => M.pure(())
                    case r                    => throwServerError(r)
@@ -46,7 +46,7 @@ class EventTypeInterpreter[F[_]: Async: ContextShift](httpClient: Client[F])(imp
     val req = Request[F](GET, uri)
 
     for {
-      request <- addBaseHeaders(req, config)
+      request <- addHeaders(req, config)
       response <- httpClient.fetch[Option[EventType]](request) {
                    case Status.NotFound(_)   => M.pure(None)
                    case Status.Successful(l) => l.as[EventType].map(_.some)
@@ -60,7 +60,7 @@ class EventTypeInterpreter[F[_]: Async: ContextShift](httpClient: Client[F])(imp
     val req = Request[F](PUT, uri).withEntity(encode(eventType))
 
     for {
-      request <- addBaseHeaders(req, config)
+      request <- addHeaders(req, config)
       response <- httpClient.fetch[Unit](request) {
                    case Status.Successful(_) => M.pure(())
                    case r                    => throwServerError(r)
@@ -73,7 +73,7 @@ class EventTypeInterpreter[F[_]: Async: ContextShift](httpClient: Client[F])(imp
     val req = Request[F](DELETE, uri)
 
     for {
-      request <- addBaseHeaders(req, config)
+      request <- addHeaders(req, config)
       response <- httpClient.fetch[Unit](request) {
                    case Status.Successful(_) => M.pure(())
                    case r                    => throwServerError(r)
