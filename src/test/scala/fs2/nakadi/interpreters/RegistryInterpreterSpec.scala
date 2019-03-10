@@ -17,7 +17,7 @@ class RegistryInterpreterSpec extends FlatSpec with Matchers with Implicits with
 
   private val interpreter = new RegistryInterpreter[IO](client())
 
-  "Registries" should "return enrichment strategies" in {
+  "RegistryInterpreter" should "return enrichment strategies" in {
     val response = interpreter.enrichmentStrategies.unsafeRunSync()
 
     response shouldBe List(MetadataEnrichment)

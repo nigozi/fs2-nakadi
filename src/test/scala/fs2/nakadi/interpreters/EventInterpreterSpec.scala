@@ -27,7 +27,7 @@ class EventInterpreterSpec extends FlatSpec with Matchers with Implicits with Te
 
   private val event = Business("""{"foo": "bar"}""".asJson, Metadata())
 
-  "Events" should "publish events" in {
+  "EventInterpreter" should "publish events" in {
     val response = new EventInterpreter[IO](client()).publish[Json](EventTypeName("test"), List(event))
 
     noException should be thrownBy response.unsafeRunSync()

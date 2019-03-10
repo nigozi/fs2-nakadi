@@ -20,7 +20,7 @@ class EventTypeInterpreterSpec extends FlatSpec with Matchers with Implicits wit
     category = Category.Business
   )
 
-  "EventTypes" should "find an existing event type" in {
+  "EventTypeInterpreter" should "find an existing event type" in {
     val response = new EventTypeInterpreter[IO](client()).get(EventTypeName("test")).unsafeRunSync()
 
     response shouldBe Some(eventType)
