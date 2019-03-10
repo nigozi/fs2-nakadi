@@ -7,16 +7,17 @@ import cats.{Monad, MonadError}
 import fs2.nakadi.dsl.EventTypes
 import fs2.nakadi.model._
 import org.http4s.circe._
+import org.http4s.client.Client
 import org.http4s.dsl.io._
 import org.http4s.{Request, Status, Uri}
 
-class EventTypeInterpreter[F[_]: Async: ContextShift](implicit ME: MonadError[F, Throwable], M: Monad[F])
+class EventTypeInterpreter[F[_]: Async: ContextShift](httpClient: Client[F])(implicit ME: MonadError[F, Throwable],
+                                                                             M: Monad[F])
     extends EventTypes[F] {
 
   def list(implicit config: NakadiConfig[F]): F[List[EventType]] = {
-    val uri        = Uri.unsafeFromString(config.uri.toString) / "event-types"
-    val req        = Request[F](GET, uri)
-    val httpClient = config.httpClient.getOrElse(defaultClient[F])
+    val uri = Uri.unsafeFromString(config.uri.toString) / "event-types"
+    val req = Request[F](GET, uri)
 
     for {
       request <- addBaseHeaders(req, config)
@@ -28,9 +29,8 @@ class EventTypeInterpreter[F[_]: Async: ContextShift](implicit ME: MonadError[F,
   }
 
   def create(eventType: EventType)(implicit config: NakadiConfig[F]): F[Unit] = {
-    val uri        = Uri.unsafeFromString(config.uri.toString) / "event-types"
-    val req        = Request[F](POST, uri).withEntity(encode(eventType))
-    val httpClient = config.httpClient.getOrElse(defaultClient[F])
+    val uri = Uri.unsafeFromString(config.uri.toString) / "event-types"
+    val req = Request[F](POST, uri).withEntity(encode(eventType))
 
     for {
       request <- addBaseHeaders(req, config)
@@ -42,9 +42,8 @@ class EventTypeInterpreter[F[_]: Async: ContextShift](implicit ME: MonadError[F,
   }
 
   def get(name: EventTypeName)(implicit config: NakadiConfig[F]): F[Option[EventType]] = {
-    val uri        = Uri.unsafeFromString(config.uri.toString) / "event-types" / name.name
-    val req        = Request[F](GET, uri)
-    val httpClient = config.httpClient.getOrElse(defaultClient[F])
+    val uri = Uri.unsafeFromString(config.uri.toString) / "event-types" / name.name
+    val req = Request[F](GET, uri)
 
     for {
       request <- addBaseHeaders(req, config)
@@ -57,9 +56,8 @@ class EventTypeInterpreter[F[_]: Async: ContextShift](implicit ME: MonadError[F,
   }
 
   def update(name: EventTypeName, eventType: EventType)(implicit config: NakadiConfig[F]): F[Unit] = {
-    val uri        = Uri.unsafeFromString(config.uri.toString) / "event-types" / name.name
-    val req        = Request[F](PUT, uri).withEntity(encode(eventType))
-    val httpClient = config.httpClient.getOrElse(defaultClient[F])
+    val uri = Uri.unsafeFromString(config.uri.toString) / "event-types" / name.name
+    val req = Request[F](PUT, uri).withEntity(encode(eventType))
 
     for {
       request <- addBaseHeaders(req, config)
@@ -71,9 +69,8 @@ class EventTypeInterpreter[F[_]: Async: ContextShift](implicit ME: MonadError[F,
   }
 
   def delete(name: EventTypeName)(implicit config: NakadiConfig[F]): F[Unit] = {
-    val uri        = Uri.unsafeFromString(config.uri.toString) / "event-types" / name.name
-    val req        = Request[F](DELETE, uri)
-    val httpClient = config.httpClient.getOrElse(defaultClient[F])
+    val uri = Uri.unsafeFromString(config.uri.toString) / "event-types" / name.name
+    val req = Request[F](DELETE, uri)
 
     for {
       request <- addBaseHeaders(req, config)
@@ -83,9 +80,4 @@ class EventTypeInterpreter[F[_]: Async: ContextShift](implicit ME: MonadError[F,
                  }
     } yield response
   }
-}
-
-object EventTypeInterpreter {
-  def apply[F[_]: Async: ContextShift](implicit ME: MonadError[F, Throwable], M: Monad[F]): EventTypeInterpreter[F] =
-    new EventTypeInterpreter[F]()
 }

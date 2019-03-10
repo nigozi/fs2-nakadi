@@ -1,4 +1,5 @@
-package fs2.nakadi.dsl
+package fs2.nakadi
+
 import cats.effect.{ContextShift, IO}
 
 import scala.concurrent.ExecutionContext.Implicits.global

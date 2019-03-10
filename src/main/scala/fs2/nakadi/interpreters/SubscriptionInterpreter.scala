@@ -13,6 +13,7 @@ import fs2.nakadi.model._
 import io.circe.{Decoder, Json}
 import jawnfs2._
 import org.http4s.circe._
+import org.http4s.client.Client
 import org.http4s.dsl.io._
 import org.http4s.headers._
 import org.http4s.util.CaseInsensitiveString
@@ -21,16 +22,17 @@ import org.typelevel.jawn.RawFacade
 
 import scala.util.Try
 
-class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](implicit ME: MonadError[F, Throwable], M: Monad[F])
+class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient: Client[F])(
+    implicit ME: MonadError[F, Throwable],
+    M: Monad[F])
     extends Subscriptions[F] {
   private lazy val logger = Logger[SubscriptionInterpreter[F]]
 
   implicit val f: RawFacade[Json] = io.circe.jawn.CirceSupportParser.facade
 
   def create(subscription: Subscription)(implicit config: NakadiConfig[F]): F[Subscription] = {
-    val uri        = Uri.unsafeFromString(config.uri.toString) / "subscriptions"
-    val req        = Request[F](POST, uri).withEntity(encode(subscription))
-    val httpClient = config.httpClient.getOrElse(defaultClient[F])
+    val uri = Uri.unsafeFromString(config.uri.toString) / "subscriptions"
+    val req = Request[F](POST, uri).withEntity(encode(subscription))
 
     for {
       request <- addBaseHeaders(req, config)
@@ -77,8 +79,7 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](implicit ME
 
     val uriWithEventType = eventType.map(tp => uri.withQueryParam("event_type", tp.map(_.name))).getOrElse(uri)
 
-    val req        = Request[F](GET, uriWithEventType)
-    val httpClient = config.httpClient.getOrElse(defaultClient[F])
+    val req = Request[F](GET, uriWithEventType)
 
     for {
       request <- addBaseHeaders(req, config)
@@ -90,9 +91,8 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](implicit ME
   }
 
   def get(subscriptionId: SubscriptionId)(implicit config: NakadiConfig[F]): F[Option[Subscription]] = {
-    val uri        = Uri.unsafeFromString(config.uri.toString) / "subscriptions" / subscriptionId.id.toString
-    val req        = Request[F](GET, uri)
-    val httpClient = config.httpClient.getOrElse(defaultClient[F])
+    val uri = Uri.unsafeFromString(config.uri.toString) / "subscriptions" / subscriptionId.id.toString
+    val req = Request[F](GET, uri)
 
     for {
       request <- addBaseHeaders(req, config)
@@ -105,9 +105,8 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](implicit ME
   }
 
   def delete(subscriptionId: SubscriptionId)(implicit config: NakadiConfig[F]): F[Unit] = {
-    val uri        = Uri.unsafeFromString(config.uri.toString) / "subscriptions" / subscriptionId.id.toString
-    val req        = Request[F](DELETE, uri)
-    val httpClient = config.httpClient.getOrElse(defaultClient[F])
+    val uri = Uri.unsafeFromString(config.uri.toString) / "subscriptions" / subscriptionId.id.toString
+    val req = Request[F](DELETE, uri)
 
     for {
       request <- addBaseHeaders(req, config)
@@ -119,9 +118,8 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](implicit ME
   }
 
   def cursors(subscriptionId: SubscriptionId)(implicit config: NakadiConfig[F]): F[Option[SubscriptionCursor]] = {
-    val uri        = Uri.unsafeFromString(config.uri.toString) / "subscriptions" / subscriptionId.id.toString / "cursors"
-    val req        = Request[F](GET, uri)
-    val httpClient = config.httpClient.getOrElse(defaultClient[F])
+    val uri = Uri.unsafeFromString(config.uri.toString) / "subscriptions" / subscriptionId.id.toString / "cursors"
+    val req = Request[F](GET, uri)
 
     for {
       request <- addBaseHeaders(req, config)
@@ -137,7 +135,6 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](implicit ME
       implicit config: NakadiConfig[F]): F[Option[CommitCursorResponse]] = {
     val uri          = Uri.unsafeFromString(config.uri.toString) / "subscriptions" / subscriptionId.id.toString / "cursors"
     val req          = Request[F](POST, uri).withEntity(encode(subscriptionCursor))
-    val httpClient   = config.httpClient.getOrElse(defaultClient[F])
     val streamHeader = Header(xNakadiStreamIdHeader, streamId.id)
 
     logger.info(s"committing cursor, subscription id: ${subscriptionId.id}, stream id: ${streamId.id}")
@@ -159,7 +156,6 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](implicit ME
       case Some(c) => Request[F](PATCH, uri).withEntity(encode(c))
       case None    => Request[F](PATCH, uri)
     }
-    val httpClient = config.httpClient.getOrElse(defaultClient[F])
 
     for {
       request <- addBaseHeaders(req, config)
@@ -184,8 +180,7 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](implicit ME
       .withOptionQueryParam("stream_keep_alive_limit", streamConfig.streamKeepAliveLimit)
       .withOptionQueryParam("commit_timeout", streamConfig.commitTimeout.map(_.toSeconds))
 
-    val httpClient = config.httpClient.getOrElse(defaultClient[F])
-    val request    = addBaseHeaders(Request[F](GET, uri), config, List(Connection(CaseInsensitiveString("keep-alive"))))
+    val request = addBaseHeaders(Request[F](GET, uri), config, List(Connection(CaseInsensitiveString("keep-alive"))))
 
     def parseResponse(resp: Response[F]): Stream[F, StreamEvent[T]] = resp.status match {
       case Status.Ok =>
@@ -240,10 +235,4 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](implicit ME
                 M.pure(false)
             }
       })
-}
-
-object SubscriptionInterpreter {
-  def apply[F[_]: Async: ContextShift: Concurrent](implicit ME: MonadError[F, Throwable],
-                                                   M: Monad[F]): SubscriptionInterpreter[F] =
-    new SubscriptionInterpreter[F]()
 }

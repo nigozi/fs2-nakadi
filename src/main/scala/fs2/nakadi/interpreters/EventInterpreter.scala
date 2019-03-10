@@ -10,16 +10,17 @@ import fs2.nakadi.error.{BatchItemResponse, EventValidation}
 import fs2.nakadi.model._
 import io.circe.Encoder
 import org.http4s.circe._
+import org.http4s.client.Client
 import org.http4s.dsl.io._
 import org.http4s.{Request, Status, Uri}
 
-class EventInterpreter[F[_]: Async: ContextShift](implicit ME: MonadError[F, Throwable]) extends Events[F] {
+class EventInterpreter[F[_]: Async: ContextShift](httpClient: Client[F])(implicit ME: MonadError[F, Throwable])
+    extends Events[F] {
 
   def publish[T](name: EventTypeName, events: List[Event[T]])(implicit config: NakadiConfig[F],
                                                               enc: Encoder[T]): F[Unit] = {
-    val uri        = Uri.unsafeFromString(config.uri.toString) / "event-types" / name.name / "events"
-    val req        = Request[F](POST, uri).withEntity(encode(events))
-    val httpClient = config.httpClient.getOrElse(defaultClient[F])
+    val uri = Uri.unsafeFromString(config.uri.toString) / "event-types" / name.name / "events"
+    val req = Request[F](POST, uri).withEntity(encode(events))
 
     for {
       request <- addBaseHeaders(req, config)
@@ -31,9 +32,4 @@ class EventInterpreter[F[_]: Async: ContextShift](implicit ME: MonadError[F, Thr
                  }
     } yield response
   }
-}
-
-object EventInterpreter {
-  def apply[F[_]: Async: ContextShift](implicit ME: MonadError[F, Throwable]): EventInterpreter[F] =
-    new EventInterpreter()
 }

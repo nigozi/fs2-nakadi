@@ -1,16 +1,19 @@
-package fs2.nakadi.dsl
+package fs2.nakadi.interpreters
 
 import java.net.URI
 
 import cats.effect.IO
 import fs2.nakadi.error.ServerError
 import fs2.nakadi.model.{Category, EventType, EventTypeName, NakadiConfig}
+import fs2.nakadi.{Implicits, TestResources}
 import org.http4s.HttpApp
 import org.http4s.client.Client
 import org.http4s.dsl.io._
 import org.scalatest.{FlatSpec, Matchers}
 
-class EventTypesSpec extends FlatSpec with Matchers {
+class EventTypesSpec extends FlatSpec with Matchers with Implicits with TestResources {
+  implicit val config: NakadiConfig[IO] = NakadiConfig(uri = new URI(""))
+
   val eventType = EventType(
     name = EventTypeName("test"),
     owningApplication = "test-app",
@@ -18,22 +21,19 @@ class EventTypesSpec extends FlatSpec with Matchers {
   )
 
   "EventTypes" should "find an existing event type" in {
-    implicit val config: NakadiConfig[IO] = NakadiConfig(uri = new URI(""), httpClient = Some(client()))
-    val response                          = EventTypes[IO].get(EventTypeName("test")).unsafeRunSync()
+    val response = new EventTypeInterpreter[IO](client()).get(EventTypeName("test")).unsafeRunSync()
 
     response shouldBe Some(eventType)
   }
 
   it should "return None if event type doesn't exist" in {
-    implicit val config: NakadiConfig[IO] = NakadiConfig(uri = new URI(""), httpClient = Some(client(found = false)))
-    val response                          = EventTypes[IO].get(EventTypeName("test")).unsafeRunSync()
+    val response = new EventTypeInterpreter[IO](client(found = false)).get(EventTypeName("test")).unsafeRunSync()
 
     response shouldBe None
   }
 
   it should "return error if call fails" in {
-    implicit val config: NakadiConfig[IO] = NakadiConfig(uri = new URI(""), httpClient = Some(failingClient))
-    val response                          = EventTypes[IO].get(eventType.name)
+    val response = new EventTypeInterpreter[IO](failingClient).get(eventType.name)
 
     val caught = intercept[ServerError] {
       response.unsafeRunSync()
@@ -43,29 +43,25 @@ class EventTypesSpec extends FlatSpec with Matchers {
   }
 
   it should "list event types" in {
-    implicit val config: NakadiConfig[IO] = NakadiConfig(uri = new URI(""), httpClient = Some(client()))
-    val response                          = EventTypes[IO].list.unsafeRunSync()
+    val response = new EventTypeInterpreter[IO](client()).list.unsafeRunSync()
 
     response shouldBe List(eventType)
   }
 
   it should "delete the event type" in {
-    implicit val config: NakadiConfig[IO] = NakadiConfig(uri = new URI(""), httpClient = Some(client()))
-    val response                          = EventTypes[IO].delete(eventType.name)
+    val response = new EventTypeInterpreter[IO](client()).delete(eventType.name)
 
     noException should be thrownBy response.unsafeRunSync()
   }
 
   it should "create the event type" in {
-    implicit val config: NakadiConfig[IO] = NakadiConfig(uri = new URI(""), httpClient = Some(client()))
-    val response                          = EventTypes[IO].create(eventType)
+    val response = new EventTypeInterpreter[IO](client()).create(eventType)
 
     noException should be thrownBy response.unsafeRunSync()
   }
 
   it should "return error if fails to create the event type" in {
-    implicit val config: NakadiConfig[IO] = NakadiConfig(uri = new URI(""), httpClient = Some(failingClient))
-    val response                          = EventTypes[IO].create(eventType)
+    val response = new EventTypeInterpreter[IO](failingClient).create(eventType)
 
     val caught = intercept[ServerError] {
       response.unsafeRunSync()

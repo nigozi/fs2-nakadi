@@ -2,7 +2,7 @@ package fs2.nakadi.dsl
 import cats.effect.IO
 import cats.tagless.finalAlg
 import fs2.Stream
-import fs2.nakadi.dsl.Implicits._
+import fs2.nakadi.Implicits._
 import fs2.nakadi.interpreters.SubscriptionInterpreter
 import fs2.nakadi.model._
 import io.circe.Decoder
@@ -41,5 +41,5 @@ trait Subscriptions[F[_]] {
 }
 
 object Subscriptions {
-  implicit object ioInterpreter extends SubscriptionInterpreter[IO]
+  implicit object ioInterpreter extends SubscriptionInterpreter[IO](httpClient[IO])
 }

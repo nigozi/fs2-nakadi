@@ -1,7 +1,7 @@
 package fs2.nakadi.dsl
 import cats.effect.IO
 import cats.tagless.finalAlg
-import fs2.nakadi.dsl.Implicits._
+import fs2.nakadi.Implicits._
 import fs2.nakadi.interpreters.EventInterpreter
 import fs2.nakadi.model._
 import io.circe.Encoder
@@ -13,5 +13,5 @@ trait Events[F[_]] {
 }
 
 object Events {
-  implicit object ioInterpreter extends EventInterpreter[IO]
+  implicit object ioInterpreter extends EventInterpreter[IO](httpClient[IO])
 }
