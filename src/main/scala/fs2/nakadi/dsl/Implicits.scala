@@ -1,4 +1,4 @@
-package fs2.nakadi
+package fs2.nakadi.dsl
 
 import cats.effect.{ContextShift, IO}
 

@@ -7,7 +7,8 @@ import cats.effect.IO
 import fs2.nakadi.error.{BatchItemResponse, EventValidation, PublishingStatus, Step}
 import fs2.nakadi.model.Event.Business
 import fs2.nakadi.model.{EventId, EventTypeName, Metadata, NakadiConfig}
-import fs2.nakadi.{Implicits, TestResources}
+import fs2.nakadi.TestResources
+import fs2.nakadi.dsl.Implicits
 import io.circe.Json
 import io.circe.syntax._
 import org.http4s.HttpApp

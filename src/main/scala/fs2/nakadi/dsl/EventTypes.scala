@@ -1,7 +1,6 @@
 package fs2.nakadi.dsl
 import cats.effect.IO
 import cats.tagless.finalAlg
-import fs2.nakadi.Implicits._
 import fs2.nakadi.interpreters.EventTypeInterpreter
 import fs2.nakadi.model._
 
@@ -18,6 +17,6 @@ trait EventTypes[F[_]] {
   def delete(name: EventTypeName)(implicit config: NakadiConfig[F]): F[Unit]
 }
 
-object EventTypes {
+object EventTypes extends Implicits {
   implicit object ioInterpreter extends EventTypeInterpreter[IO](httpClient[IO])
 }

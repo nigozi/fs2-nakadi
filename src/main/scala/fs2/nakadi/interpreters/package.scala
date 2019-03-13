@@ -1,8 +1,7 @@
 package fs2.nakadi
 import java.util.UUID
-import java.util.concurrent.Executors
 
-import cats.effect.{Async, ContextShift, Sync}
+import cats.effect.{Async, Sync}
 import cats.instances.option._
 import cats.syntax.applicativeError._
 import cats.syntax.either._
@@ -17,23 +16,13 @@ import io.circe.syntax._
 import io.circe.{Decoder, Encoder, Json, Printer}
 import org.http4s
 import org.http4s.circe._
-import org.http4s.client.{Client, JavaNetClientBuilder}
 import org.http4s.headers.Authorization
 import org.http4s.util.CaseInsensitiveString
 import org.http4s.{EntityDecoder, Header, Request, Response}
 
-import scala.concurrent.{ExecutionContext, ExecutionContextExecutorService}
-
 package object interpreters {
   private[interpreters] val XNakadiStreamId = "X-Nakadi-StreamId"
   private[interpreters] val XFlowId         = "X-Flow-ID"
-
-  private[interpreters] def defaultClient[F[_]: Async](implicit cs: ContextShift[F]): Client[F] = {
-    val blockingEC: ExecutionContextExecutorService =
-      ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(5))
-
-    JavaNetClientBuilder[F](blockingEC).create
-  }
 
   private[interpreters] def addHeaders[F[_]: Async](req: Request[F],
                                                     config: NakadiConfig[F],

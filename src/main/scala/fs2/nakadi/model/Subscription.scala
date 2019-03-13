@@ -8,7 +8,7 @@ import io.circe.syntax._
 import io.circe.{Decoder, Encoder, JsonObject}
 
 import scala.collection.immutable
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 
 final case class SubscriptionId(id: UUID) extends AnyVal
 
@@ -177,12 +177,15 @@ object EventTypeStats {
   implicit val decoder: Decoder[EventTypeStats] = deriveDecoder(renaming.snakeCase)
 }
 
-final case class StreamConfig(maxUncommittedEvents: Option[Int] = None,
-                              batchLimit: Option[Int] = None,
-                              streamLimit: Option[Int] = None,
-                              batchFlushTimeout: Option[FiniteDuration] = None,
-                              commitTimeout: Option[FiniteDuration] = None,
-                              streamTimeout: Option[FiniteDuration] = None,
-                              streamKeepAliveLimit: Option[Int] = None)
+final case class StreamConfig(
+    maxUncommittedEvents: Option[Int] = None,
+    batchLimit: Option[Int] = None,
+    streamLimit: Option[Int] = None,
+    batchFlushTimeout: Option[FiniteDuration] = None,
+    commitTimeout: Option[FiniteDuration] = None,
+    streamTimeout: Option[FiniteDuration] = None,
+    streamKeepAliveLimit: Option[Int] = None,
+    noEmptySlotsRetryDelay: FiniteDuration = 30.seconds
+)
 
 final case class StreamEvent[T](event: SubscriptionEvent[T], streamId: StreamId)

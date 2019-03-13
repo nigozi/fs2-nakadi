@@ -2,7 +2,6 @@ package fs2.nakadi.dsl
 import cats.effect.IO
 import cats.tagless.finalAlg
 import fs2.Stream
-import fs2.nakadi.Implicits._
 import fs2.nakadi.interpreters.SubscriptionInterpreter
 import fs2.nakadi.model._
 import io.circe.Decoder
@@ -30,16 +29,15 @@ trait Subscriptions[F[_]] {
   def resetCursors(subscriptionId: SubscriptionId, subscriptionCursor: Option[SubscriptionCursor] = None)(
       implicit config: NakadiConfig[F]): F[Boolean]
 
-  def eventStream[T](subscriptionId: SubscriptionId, streamConfig: StreamConfig)(
-      implicit config: NakadiConfig[F],
-      decoder: Decoder[T]): Stream[F, StreamEvent[T]]
+  def eventStream[T: Decoder](subscriptionId: SubscriptionId, streamConfig: StreamConfig)(
+      implicit config: NakadiConfig[F]): Stream[F, StreamEvent[T]]
 
-  def managedEventStream[T](parallelism: Int)(
+  def managedEventStream[T: Decoder](parallelism: Int)(
       subscriptionId: SubscriptionId,
       eventCallback: EventCallback[T],
-      streamConfig: StreamConfig)(implicit config: NakadiConfig[F], decoder: Decoder[T]): Stream[F, Boolean]
+      streamConfig: StreamConfig)(implicit config: NakadiConfig[F]): Stream[F, Boolean]
 }
 
-object Subscriptions {
+object Subscriptions extends Implicits {
   implicit object ioInterpreter extends SubscriptionInterpreter[IO](httpClient[IO])
 }

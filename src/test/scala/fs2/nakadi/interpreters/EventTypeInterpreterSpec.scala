@@ -5,7 +5,8 @@ import java.net.URI
 import cats.effect.IO
 import fs2.nakadi.error.ServerError
 import fs2.nakadi.model.{Category, EventType, EventTypeName, NakadiConfig}
-import fs2.nakadi.{Implicits, TestResources}
+import fs2.nakadi.TestResources
+import fs2.nakadi.dsl.Implicits
 import org.http4s.HttpApp
 import org.http4s.client.Client
 import org.http4s.dsl.io._
