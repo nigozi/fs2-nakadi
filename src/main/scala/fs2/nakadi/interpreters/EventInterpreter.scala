@@ -6,6 +6,7 @@ import cats.syntax.functor._
 import cats.{Monad, MonadError}
 import fs2.nakadi.dsl.Events
 import fs2.nakadi.error.{BatchItemResponse, EventValidation}
+import fs2.nakadi.implicits._
 import fs2.nakadi.model._
 import fs2.{Pipe, Stream}
 import io.circe.Encoder
@@ -16,7 +17,8 @@ import org.http4s.{Request, Status, Uri}
 
 class EventInterpreter[F[_]: Async: ContextShift](httpClient: Client[F])(implicit ME: MonadError[F, Throwable],
                                                                          M: Monad[F])
-    extends Events[F] {
+    extends Events[F]
+    with Interpreter {
 
   def publish[T](name: EventTypeName, events: List[Event[T]])(implicit config: NakadiConfig[F],
                                                               enc: Encoder[T]): F[Unit] = {

@@ -4,11 +4,12 @@ import java.net.URI
 import java.util.UUID
 
 import cats.effect.IO
+import fs2.nakadi.TestResources
 import fs2.nakadi.error.{BatchItemResponse, EventValidation, PublishingStatus, Step}
+import fs2.nakadi.implicits._
+import fs2.nakadi.instances.ContextShifts
 import fs2.nakadi.model.Event.Business
 import fs2.nakadi.model.{EventId, EventTypeName, Metadata, NakadiConfig}
-import fs2.nakadi.TestResources
-import fs2.nakadi.dsl.Implicits
 import io.circe.Json
 import io.circe.syntax._
 import org.http4s.HttpApp
@@ -16,7 +17,7 @@ import org.http4s.client.Client
 import org.http4s.dsl.io._
 import org.scalatest.{FlatSpec, Matchers}
 
-class EventInterpreterSpec extends FlatSpec with Matchers with Implicits with TestResources {
+class EventInterpreterSpec extends FlatSpec with Matchers with ContextShifts with TestResources {
   implicit val config: NakadiConfig[IO] = NakadiConfig(uri = new URI(""))
 
   private val validationError = BatchItemResponse(

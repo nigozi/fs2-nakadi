@@ -3,16 +3,17 @@ package fs2.nakadi.interpreters
 import java.net.URI
 
 import cats.effect.IO
-import fs2.nakadi.error.ServerError
-import fs2.nakadi.model.{Category, EventType, EventTypeName, NakadiConfig}
 import fs2.nakadi.TestResources
-import fs2.nakadi.dsl.Implicits
+import fs2.nakadi.error.ServerError
+import fs2.nakadi.implicits._
+import fs2.nakadi.instances.ContextShifts
+import fs2.nakadi.model.{Category, EventType, EventTypeName, NakadiConfig}
 import org.http4s.HttpApp
 import org.http4s.client.Client
 import org.http4s.dsl.io._
 import org.scalatest.{FlatSpec, Matchers}
 
-class EventTypeInterpreterSpec extends FlatSpec with Matchers with Implicits with TestResources {
+class EventTypeInterpreterSpec extends FlatSpec with Matchers with ContextShifts with TestResources {
   implicit val config: NakadiConfig[IO] = NakadiConfig(uri = new URI(""))
 
   val eventType = EventType(

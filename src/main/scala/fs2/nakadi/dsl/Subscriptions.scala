@@ -2,6 +2,8 @@ package fs2.nakadi.dsl
 import cats.effect.IO
 import cats.tagless.finalAlg
 import fs2.Stream
+import fs2.nakadi.httpClient
+import fs2.nakadi.instances.ContextShifts
 import fs2.nakadi.interpreters.SubscriptionInterpreter
 import fs2.nakadi.model._
 import io.circe.Decoder
@@ -38,6 +40,6 @@ trait Subscriptions[F[_]] {
       streamConfig: StreamConfig)(implicit config: NakadiConfig[F]): Stream[F, Boolean]
 }
 
-object Subscriptions extends Implicits {
+object Subscriptions extends ContextShifts {
   implicit object ioInterpreter extends SubscriptionInterpreter[IO](httpClient[IO])
 }

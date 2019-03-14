@@ -7,14 +7,15 @@ import cats.effect.IO
 import fs2.nakadi.error.ServerError
 import fs2.nakadi.model.{NakadiConfig, PaginationLinks, Subscription, SubscriptionId, SubscriptionQuery}
 import fs2.nakadi.TestResources
-import fs2.nakadi.dsl.Implicits
+import fs2.nakadi.implicits._
+import fs2.nakadi.instances.ContextShifts
 import org.http4s.HttpApp
 import org.http4s.client.Client
 import org.http4s.dsl.io._
 import org.scalatest.OptionValues._
 import org.scalatest.{FlatSpec, Matchers}
 
-class SubscriptionInterpreterSpec extends FlatSpec with Matchers with Implicits with TestResources {
+class SubscriptionInterpreterSpec extends FlatSpec with Matchers with ContextShifts with TestResources {
   implicit val config: NakadiConfig[IO] = NakadiConfig(uri = new URI(""))
 
   private val subscription = Subscription(owningApplication = "test", id = Some(SubscriptionId(UUID.randomUUID())))

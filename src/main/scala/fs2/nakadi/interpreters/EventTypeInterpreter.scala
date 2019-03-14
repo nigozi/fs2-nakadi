@@ -5,6 +5,7 @@ import cats.syntax.functor._
 import cats.syntax.option._
 import cats.{Monad, MonadError}
 import fs2.nakadi.dsl.EventTypes
+import fs2.nakadi.implicits._
 import fs2.nakadi.model._
 import org.http4s.circe._
 import org.http4s.client.Client
@@ -13,7 +14,8 @@ import org.http4s.{Request, Status, Uri}
 
 class EventTypeInterpreter[F[_]: Async: ContextShift](httpClient: Client[F])(implicit ME: MonadError[F, Throwable],
                                                                              M: Monad[F])
-    extends EventTypes[F] {
+    extends EventTypes[F]
+    with Interpreter {
 
   def list(implicit config: NakadiConfig[F]): F[List[EventType]] = {
     val uri = Uri.unsafeFromString(config.uri.toString) / "event-types"

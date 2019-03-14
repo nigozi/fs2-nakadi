@@ -7,6 +7,7 @@ import cats.{Monad, MonadError}
 import com.typesafe.scalalogging.Logger
 import fs2.nakadi.dsl.Subscriptions
 import fs2.nakadi.error.{GeneralError, ServerError}
+import fs2.nakadi.implicits._
 import fs2.nakadi.model._
 import fs2.{Chunk, Pipe, Stream}
 import io.circe.{Decoder, DecodingFailure, Json}
@@ -24,7 +25,8 @@ import scala.util.Try
 class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient: Client[F])(
     implicit ME: MonadError[F, Throwable],
     M: Monad[F])
-    extends Subscriptions[F] {
+    extends Subscriptions[F]
+    with Interpreter {
   import SubscriptionInterpreter._
 
   private lazy val logger = Logger[SubscriptionInterpreter[F]]

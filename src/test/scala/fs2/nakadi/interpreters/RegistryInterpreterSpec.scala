@@ -3,17 +3,17 @@ package fs2.nakadi.interpreters
 import java.net.URI
 
 import cats.effect.IO
+import fs2.nakadi.TestResources
+import fs2.nakadi.instances.ContextShifts
 import fs2.nakadi.model.EnrichmentStrategy.MetadataEnrichment
 import fs2.nakadi.model.NakadiConfig
 import fs2.nakadi.model.PartitionStrategy.{Hash, Random, UserDefined}
-import fs2.nakadi.TestResources
-import fs2.nakadi.dsl.Implicits
 import org.http4s.HttpApp
 import org.http4s.client.Client
 import org.http4s.dsl.io._
 import org.scalatest.{FlatSpec, Matchers}
 
-class RegistryInterpreterSpec extends FlatSpec with Matchers with Implicits with TestResources {
+class RegistryInterpreterSpec extends FlatSpec with Matchers with ContextShifts with TestResources {
   private implicit val config: NakadiConfig[IO] = NakadiConfig(uri = new URI(""))
 
   private val interpreter = new RegistryInterpreter[IO](client())
