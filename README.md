@@ -10,6 +10,11 @@ fs2-nakadi is [Nakadi](https://nakadi.io/) client for Scala based on FS2.
 ## Status
 Work is still in progress but the basic DSLs are defined.
 
+## Installation
+```sbtshell
+libraryDependencies += "io.nigo" %% "fs2-nakadi" % "0.1.0-M1"
+```
+
 ## Usage
 
 ### Event Types
