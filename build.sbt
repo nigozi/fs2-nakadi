@@ -1,3 +1,6 @@
+import sbt.url
+import ReleaseTransformations._
+
 name := """fs2-nakadi"""
 
 val http4sVersion = "0.20.0-M6"
@@ -10,6 +13,40 @@ organization := "org.zalando"
 fork in Test := true
 parallelExecution in Test := true
 testForkedParallel in Test := true
+
+lazy val publishSettings = Seq(
+  organization := "io.nigo",
+  publishTo := {
+    val nexus = "https://oss.sonatype.org/"
+    if (isSnapshot.value)
+      Some("snapshots" at nexus + "content/repositories/snapshots")
+    else
+      Some("releases"  at nexus + "service/local/staging/deploy/maven2")
+  },
+  credentials += Credentials(Path.userHome / ".sbt" / "sonatype_credential"),
+  scmInfo := Some(ScmInfo(url("https://github.com/nigozi/fs2-nakadi"), "git@github.com:nigozi/fs2-nakadi.git")),
+  licenses := List("MIT" -> url("http://opensource.org/licenses/MIT")),
+  homepage := Some(url("https://github.com/nigozi/fs2-nakadi")),
+  developers := List(Developer("nigozi", "Nima Goodarzi", "nima@nigo.io", url("https://github.com/nigozi"))),
+  publishArtifact in Test := false,
+  sonatypeProfileName := "io.nigo",
+  publishMavenStyle := true
+)
+
+lazy val releaseSettings = Seq (
+  releaseProcess := Seq[ReleaseStep](
+    checkSnapshotDependencies,
+    inquireVersions,
+    runClean,
+    setReleaseVersion,
+    releaseStepCommandAndRemaining("+publishSigned"),
+    releaseStepCommand("sonatypeReleaseAll"),
+    commitReleaseVersion,
+    tagRelease,
+    setNextVersion,
+    commitNextVersion
+  )
+)
 
 scalacOptions ++= Seq(
   "-deprecation", // Emit warning and location for usages of deprecated APIs.
