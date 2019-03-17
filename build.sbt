@@ -8,8 +8,6 @@ val circeVersion  = "0.10.1"
 
 scalaVersion in ThisBuild := "2.12.8"
 
-organization := "org.zalando"
-
 fork in Test := true
 parallelExecution in Test := true
 testForkedParallel in Test := true
