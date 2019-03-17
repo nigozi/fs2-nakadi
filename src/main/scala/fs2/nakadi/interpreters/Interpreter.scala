@@ -1,6 +1,4 @@
 package fs2.nakadi.interpreters
-import java.util.UUID
-
 import cats.effect.{Async, Sync}
 import cats.instances.option._
 import cats.syntax.applicativeError._
@@ -10,7 +8,8 @@ import cats.syntax.functor._
 import cats.syntax.traverse._
 import cats.{Monad, MonadError}
 import fs2.nakadi.error.{GeneralError, ServerError}
-import fs2.nakadi.model.{NakadiConfig, StreamId, Token}
+import fs2.nakadi.model.{FlowId, NakadiConfig, StreamId, Token}
+import fs2.nakadi.randomFlowId
 import io.circe.parser._
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder, Json, Printer}
@@ -24,8 +23,10 @@ trait Interpreter {
   val XNakadiStreamId = "X-Nakadi-StreamId"
   val XFlowId         = "X-Flow-ID"
 
-  def addHeaders[F[_]: Async](req: Request[F], config: NakadiConfig[F], headers: List[Header] = Nil): F[Request[F]] = {
-    val baseHeaders = Header(XFlowId, UUID.randomUUID().toString) :: headers
+  def addHeaders[F[_]: Async](req: Request[F], headers: List[Header] = Nil)(
+      implicit config: NakadiConfig[F],
+      flowId: FlowId = randomFlowId()): F[Request[F]] = {
+    val baseHeaders = Header(XFlowId, flowId.id) :: headers
     val allHeaders = config.tokenProvider.traverse(_.provider.apply().map(authHeader)).map {
       case Some(h) => h :: baseHeaders
       case None    => baseHeaders

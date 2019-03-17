@@ -5,7 +5,7 @@ import cats.syntax.flatMap._
 import cats.syntax.functor._
 import fs2.nakadi.dsl.Registries
 import fs2.nakadi.implicits._
-import fs2.nakadi.model.{EnrichmentStrategy, NakadiConfig, PartitionStrategy}
+import fs2.nakadi.model.{EnrichmentStrategy, FlowId, NakadiConfig, PartitionStrategy}
 import org.http4s.client.Client
 import org.http4s.dsl.io.GET
 import org.http4s.{Request, Status, Uri}
@@ -14,12 +14,12 @@ class RegistryInterpreter[F[_]: Async: ContextShift](httpClient: Client[F])(impl
     extends Registries[F]
     with Interpreter {
 
-  def enrichmentStrategies(implicit config: NakadiConfig[F]): F[List[EnrichmentStrategy]] = {
+  def enrichmentStrategies(implicit config: NakadiConfig[F], flowId: FlowId): F[List[EnrichmentStrategy]] = {
     val uri = Uri.unsafeFromString(config.uri.toString) / "registry" / "enrichment-strategies"
     val req = Request[F](GET, uri)
 
     for {
-      request <- addHeaders(req, config)
+      request <- addHeaders(req)
       response <- httpClient.fetch[List[EnrichmentStrategy]](request) {
                    case Status.Successful(l) => l.as[List[EnrichmentStrategy]]
                    case r                    => throwServerError(r)
@@ -27,12 +27,12 @@ class RegistryInterpreter[F[_]: Async: ContextShift](httpClient: Client[F])(impl
     } yield response
   }
 
-  def partitionStrategies(implicit config: NakadiConfig[F]): F[List[PartitionStrategy]] = {
+  def partitionStrategies(implicit config: NakadiConfig[F], flowId: FlowId): F[List[PartitionStrategy]] = {
     val uri = Uri.unsafeFromString(config.uri.toString) / "registry" / "partition-strategies"
     val req = Request[F](GET, uri)
 
     for {
-      request <- addHeaders(req, config)
+      request <- addHeaders(req)
       response <- httpClient.fetch[List[PartitionStrategy]](request) {
                    case Status.Successful(l) => l.as[List[PartitionStrategy]]
                    case r                    => throwServerError(r)

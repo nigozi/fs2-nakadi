@@ -17,12 +17,12 @@ class EventTypeInterpreter[F[_]: Async: ContextShift](httpClient: Client[F])(imp
     extends EventTypes[F]
     with Interpreter {
 
-  def list(implicit config: NakadiConfig[F]): F[List[EventType]] = {
+  def list(implicit config: NakadiConfig[F], flowId: FlowId): F[List[EventType]] = {
     val uri = Uri.unsafeFromString(config.uri.toString) / "event-types"
     val req = Request[F](GET, uri)
 
     for {
-      request <- addHeaders(req, config)
+      request <- addHeaders(req)
       response <- httpClient.fetch[List[EventType]](request) {
                    case Status.Successful(l) => l.as[List[EventType]]
                    case r                    => throwServerError(r)
@@ -30,12 +30,12 @@ class EventTypeInterpreter[F[_]: Async: ContextShift](httpClient: Client[F])(imp
     } yield response
   }
 
-  def create(eventType: EventType)(implicit config: NakadiConfig[F]): F[Unit] = {
+  def create(eventType: EventType)(implicit config: NakadiConfig[F], flowId: FlowId): F[Unit] = {
     val uri = Uri.unsafeFromString(config.uri.toString) / "event-types"
     val req = Request[F](POST, uri).withEntity(encode(eventType))
 
     for {
-      request <- addHeaders(req, config)
+      request <- addHeaders(req)
       response <- httpClient.fetch[Unit](request) {
                    case Status.Successful(_) => M.pure(())
                    case r                    => throwServerError(r)
@@ -43,12 +43,12 @@ class EventTypeInterpreter[F[_]: Async: ContextShift](httpClient: Client[F])(imp
     } yield response
   }
 
-  def get(name: EventTypeName)(implicit config: NakadiConfig[F]): F[Option[EventType]] = {
+  def get(name: EventTypeName)(implicit config: NakadiConfig[F], flowId: FlowId): F[Option[EventType]] = {
     val uri = Uri.unsafeFromString(config.uri.toString) / "event-types" / name.name
     val req = Request[F](GET, uri)
 
     for {
-      request <- addHeaders(req, config)
+      request <- addHeaders(req)
       response <- httpClient.fetch[Option[EventType]](request) {
                    case Status.NotFound(_)   => M.pure(None)
                    case Status.Successful(l) => l.as[EventType].map(_.some)
@@ -57,12 +57,12 @@ class EventTypeInterpreter[F[_]: Async: ContextShift](httpClient: Client[F])(imp
     } yield response
   }
 
-  def update(name: EventTypeName, eventType: EventType)(implicit config: NakadiConfig[F]): F[Unit] = {
+  def update(name: EventTypeName, eventType: EventType)(implicit config: NakadiConfig[F], flowId: FlowId): F[Unit] = {
     val uri = Uri.unsafeFromString(config.uri.toString) / "event-types" / name.name
     val req = Request[F](PUT, uri).withEntity(encode(eventType))
 
     for {
-      request <- addHeaders(req, config)
+      request <- addHeaders(req)
       response <- httpClient.fetch[Unit](request) {
                    case Status.Successful(_) => M.pure(())
                    case r                    => throwServerError(r)
@@ -70,12 +70,12 @@ class EventTypeInterpreter[F[_]: Async: ContextShift](httpClient: Client[F])(imp
     } yield response
   }
 
-  def delete(name: EventTypeName)(implicit config: NakadiConfig[F]): F[Unit] = {
+  def delete(name: EventTypeName)(implicit config: NakadiConfig[F], flowId: FlowId): F[Unit] = {
     val uri = Uri.unsafeFromString(config.uri.toString) / "event-types" / name.name
     val req = Request[F](DELETE, uri)
 
     for {
-      request <- addHeaders(req, config)
+      request <- addHeaders(req)
       response <- httpClient.fetch[Unit](request) {
                    case Status.Successful(_) => M.pure(())
                    case r                    => throwServerError(r)
