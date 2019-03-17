@@ -2,7 +2,7 @@ package fs2.nakadi.model
 
 sealed trait EventCallback[T]
 
-final case class EventCallbackData[T](subscriptionEvent: SubscriptionEvent[T], streamId: StreamId)
+final case class EventCallbackData[T](subscriptionEvent: SubscriptionEvent[T], streamId: StreamId, flowId: FlowId)
 
 object EventCallback {
 

@@ -235,12 +235,13 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient:
   }
 
   private def processEvents[T](parallelism: Int)(subscriptionId: SubscriptionId, callback: EventCallback[T])(
-      implicit config: NakadiConfig[F]): Pipe[F, StreamEvent[T], Boolean] = { stream =>
+      implicit config: NakadiConfig[F],
+      flowId: FlowId): Pipe[F, StreamEvent[T], Boolean] = { stream =>
     stream
       .mapAsync(parallelism)(e =>
         callback match {
           case EventCallback.successPredicate(cb) =>
-            Try(cb(EventCallbackData(e.event, e.streamId))).toOption match {
+            Try(cb(EventCallbackData(e.event, e.streamId, flowId))).toOption match {
               case Some(true) =>
                 commitCursors(subscriptionId, SubscriptionCursor(List(e.event.cursor)), e.streamId).map(_.nonEmpty)
               case _ =>
@@ -248,7 +249,7 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient:
                 M.pure(false)
             }
           case EventCallback.successAlways(cb) =>
-            Try(cb(EventCallbackData(e.event, e.streamId))).toOption match {
+            Try(cb(EventCallbackData(e.event, e.streamId, flowId))).toOption match {
               case Some(_) =>
                 commitCursors(subscriptionId, SubscriptionCursor(List(e.event.cursor)), e.streamId).map(_.nonEmpty)
               case _ =>
