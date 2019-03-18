@@ -27,6 +27,9 @@ trait Subscriptions[F[_]] {
 
   def delete(subscriptionId: SubscriptionId)(implicit config: NakadiConfig[F], flowId: FlowId = randomFlowId()): F[Unit]
 
+  def stats(subscriptionId: SubscriptionId)(implicit config: NakadiConfig[F],
+                                            flowId: FlowId = randomFlowId()): F[Option[SubscriptionStats]]
+
   def cursors(subscriptionId: SubscriptionId)(implicit config: NakadiConfig[F],
                                               flowId: FlowId = randomFlowId()): F[Option[SubscriptionCursor]]
 

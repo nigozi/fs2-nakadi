@@ -14,7 +14,7 @@ class RegistryInterpreter[F[_]: Async: ContextShift](httpClient: Client[F])(impl
     extends Registries[F]
     with Interpreter {
 
-  def enrichmentStrategies(implicit config: NakadiConfig[F], flowId: FlowId): F[List[EnrichmentStrategy]] = {
+  override def enrichmentStrategies(implicit config: NakadiConfig[F], flowId: FlowId): F[List[EnrichmentStrategy]] = {
     val uri = Uri.unsafeFromString(config.uri.toString) / "registry" / "enrichment-strategies"
     val req = Request[F](GET, uri)
 
@@ -27,7 +27,7 @@ class RegistryInterpreter[F[_]: Async: ContextShift](httpClient: Client[F])(impl
     } yield response
   }
 
-  def partitionStrategies(implicit config: NakadiConfig[F], flowId: FlowId): F[List[PartitionStrategy]] = {
+  override def partitionStrategies(implicit config: NakadiConfig[F], flowId: FlowId): F[List[PartitionStrategy]] = {
     val uri = Uri.unsafeFromString(config.uri.toString) / "registry" / "partition-strategies"
     val req = Request[F](GET, uri)
 

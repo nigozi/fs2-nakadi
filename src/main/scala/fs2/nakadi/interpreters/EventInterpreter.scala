@@ -20,7 +20,7 @@ class EventInterpreter[F[_]: Async: ContextShift](httpClient: Client[F])(implici
     extends Events[F]
     with Interpreter {
 
-  def publish[T](name: EventTypeName,
+  override def publish[T](name: EventTypeName,
                  events: List[Event[T]])(implicit config: NakadiConfig[F], flowId: FlowId, enc: Encoder[T]): F[Unit] = {
     val uri = Uri.unsafeFromString(config.uri.toString) / "event-types" / name.name / "events"
     val req = Request[F](POST, uri).withEntity(encode(events))
@@ -36,7 +36,7 @@ class EventInterpreter[F[_]: Async: ContextShift](httpClient: Client[F])(implici
     } yield response
   }
 
-  def publishStream[T](
+  override def publishStream[T](
       name: EventTypeName)(implicit config: NakadiConfig[F], flowId: FlowId, enc: Encoder[T]): Pipe[F, Event[T], Unit] =
     _.chunks.evalMap(chunk => publish(name, chunk.toList)).handleErrorWith(Stream.raiseError[F])
 }

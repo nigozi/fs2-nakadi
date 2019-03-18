@@ -17,7 +17,7 @@ class EventTypeInterpreter[F[_]: Async: ContextShift](httpClient: Client[F])(imp
     extends EventTypes[F]
     with Interpreter {
 
-  def list(implicit config: NakadiConfig[F], flowId: FlowId): F[List[EventType]] = {
+  override def list(implicit config: NakadiConfig[F], flowId: FlowId): F[List[EventType]] = {
     val uri = Uri.unsafeFromString(config.uri.toString) / "event-types"
     val req = Request[F](GET, uri)
 
@@ -30,7 +30,7 @@ class EventTypeInterpreter[F[_]: Async: ContextShift](httpClient: Client[F])(imp
     } yield response
   }
 
-  def create(eventType: EventType)(implicit config: NakadiConfig[F], flowId: FlowId): F[Unit] = {
+  override def create(eventType: EventType)(implicit config: NakadiConfig[F], flowId: FlowId): F[Unit] = {
     val uri = Uri.unsafeFromString(config.uri.toString) / "event-types"
     val req = Request[F](POST, uri).withEntity(encode(eventType))
 
@@ -43,7 +43,7 @@ class EventTypeInterpreter[F[_]: Async: ContextShift](httpClient: Client[F])(imp
     } yield response
   }
 
-  def get(name: EventTypeName)(implicit config: NakadiConfig[F], flowId: FlowId): F[Option[EventType]] = {
+  override def get(name: EventTypeName)(implicit config: NakadiConfig[F], flowId: FlowId): F[Option[EventType]] = {
     val uri = Uri.unsafeFromString(config.uri.toString) / "event-types" / name.name
     val req = Request[F](GET, uri)
 
@@ -57,7 +57,7 @@ class EventTypeInterpreter[F[_]: Async: ContextShift](httpClient: Client[F])(imp
     } yield response
   }
 
-  def update(name: EventTypeName, eventType: EventType)(implicit config: NakadiConfig[F], flowId: FlowId): F[Unit] = {
+  override def update(name: EventTypeName, eventType: EventType)(implicit config: NakadiConfig[F], flowId: FlowId): F[Unit] = {
     val uri = Uri.unsafeFromString(config.uri.toString) / "event-types" / name.name
     val req = Request[F](PUT, uri).withEntity(encode(eventType))
 
@@ -70,7 +70,7 @@ class EventTypeInterpreter[F[_]: Async: ContextShift](httpClient: Client[F])(imp
     } yield response
   }
 
-  def delete(name: EventTypeName)(implicit config: NakadiConfig[F], flowId: FlowId): F[Unit] = {
+  override def delete(name: EventTypeName)(implicit config: NakadiConfig[F], flowId: FlowId): F[Unit] = {
     val uri = Uri.unsafeFromString(config.uri.toString) / "event-types" / name.name
     val req = Request[F](DELETE, uri)
 
