@@ -12,7 +12,7 @@ Work is still in progress but the basic DSLs are defined.
 
 ## Installation
 ```sbtshell
-libraryDependencies += "io.nigo" %% "fs2-nakadi" % "0.1.0-M1"
+libraryDependencies += "io.nigo" %% "fs2-nakadi" % "0.1.0-M2"
 ```
 
 ## Usage
@@ -123,12 +123,9 @@ You can also use `managedEventStream` which receives a callback and applies it t
 
 ```scala
 val callback =
-    EventCallback.successAlways[User](data =>
-      data
-        .subscriptionEvent
-        .events
-        .map(_.foreach(e => logger.info(s"Received Event: ${e.data.toString}")))
-    )
+    EventCallback.successAlways[User](
+      _.subscriptionEvent.events
+        .foreach(_.foreach(e => logger.info(s"Received Event: ${e.data.toString}"))))
 
 Stream
     .eval(sub)
