@@ -7,21 +7,24 @@ import cats.syntax.flatMap._
 import cats.syntax.functor._
 import cats.syntax.traverse._
 import cats.{Monad, MonadError}
-import fs2.nakadi.error.{GeneralError, ServerError}
-import fs2.nakadi.model.{FlowId, NakadiConfig, StreamId, Token}
+import fs2.nakadi.error._
+import fs2.nakadi.implicits._
+import fs2.nakadi.model.{FlowId, NakadiConfig, Token}
 import fs2.nakadi.randomFlowId
+import io.circe._
 import io.circe.parser._
 import io.circe.syntax._
-import io.circe.{Decoder, Encoder, Json, Printer}
 import org.http4s
-import org.http4s.circe._
+import org.http4s.circe.jsonOf
 import org.http4s.headers.Authorization
 import org.http4s.util.CaseInsensitiveString
 import org.http4s.{EntityDecoder, Header, Request, Response}
 
 trait Interpreter {
-  val XNakadiStreamId = "X-Nakadi-StreamId"
-  val XFlowId         = "X-Flow-ID"
+  protected val XNakadiStreamId = "X-Nakadi-StreamId"
+  protected val XFlowId         = "X-Flow-ID"
+
+  implicit def entityDecoder[F[_]: Sync, T: Decoder]: EntityDecoder[F, T] = jsonOf[F, T]
 
   def addHeaders[F[_]: Async](req: Request[F], headers: List[Header] = Nil)(
       implicit config: NakadiConfig[F],
@@ -45,20 +48,21 @@ trait Interpreter {
         .pretty(entity.asJson)
     ).valueOr(e => sys.error(s"failed to encode the entity: ${e.message}"))
 
-  def throwServerError[F[_], T](
-      r: Response[F])(implicit M: Monad[F], ME: MonadError[F, Throwable], D: EntityDecoder[F, String]): F[T] =
-    r.as[String]
-      .map(e => ServerError(r.status.code, Some(e)))
-      .handleError(_ => ServerError(r.status.code, None))
-      .flatMap(e => ME.raiseError(e))
+  def unsuccessfulOperation[F[_]: Sync, T](
+      r: Response[F])(implicit M: Monad[F], ME: MonadError[F, Throwable], D: EntityDecoder[F, String]): F[T] = {
+    val json = r.as[Json].handleErrorWith(e => ME.raiseError(UnknownError(e.getMessage)))
 
-  def streamId[F[_]](r: Response[F]): StreamId =
-    r.headers
-      .get(CaseInsensitiveString(XNakadiStreamId))
-      .map(h => StreamId(h.value)) match {
-      case Some(sid) => sid
-      case None      => throw GeneralError(s"$XNakadiStreamId header is missing")
+    json.flatMap { json =>
+      json.as[Problem] match {
+        case Left(_) =>
+          json.as[BasicServerError] match {
+            case Left(error) =>
+              ME.raiseError(UnknownError(error.message))
+            case Right(basicServerError) =>
+              ME.raiseError(OtherError(basicServerError))
+          }
+        case Right(problem) => ME.raiseError(GeneralError(problem))
+      }
     }
-
-  implicit def entityDecoder[F[_]: Sync, T: Decoder]: EntityDecoder[F, T] = jsonOf[F, T]
+  }
 }

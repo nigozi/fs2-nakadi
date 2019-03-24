@@ -2,7 +2,7 @@ package fs2.nakadi.instances
 import java.net.URI
 import java.util.UUID
 
-import fs2.nakadi.error.{BatchItemResponse, PublishingStatus, Step}
+import fs2.nakadi.error.{BatchItemResponse, Problem, PublishingStatus, Step}
 import fs2.nakadi.model.Event.{Business, DataChange, Undefined}
 import fs2.nakadi.model.EventTypeSchema.Type
 import fs2.nakadi.model.EventTypeStats.EventTypeStatsPartition
@@ -122,4 +122,6 @@ trait Decoders {
 
   implicit lazy val publishingStatusDecoder: Decoder[PublishingStatus] = enumeratum.Circe.decoder(PublishingStatus)
   implicit lazy val stepDecoder: Decoder[Step]                         = enumeratum.Circe.decoder(Step)
+
+  implicit lazy val problemDecoder: Decoder[Problem] = deriveDecoder(renaming.snakeCase)
 }

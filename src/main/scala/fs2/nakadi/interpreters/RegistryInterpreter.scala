@@ -22,7 +22,7 @@ class RegistryInterpreter[F[_]: Async: ContextShift](httpClient: Client[F])(impl
       request <- addHeaders(req)
       response <- httpClient.fetch[List[EnrichmentStrategy]](request) {
                    case Status.Successful(l) => l.as[List[EnrichmentStrategy]]
-                   case r                    => throwServerError(r)
+                   case r                    => unsuccessfulOperation(r)
                  }
     } yield response
   }
@@ -35,7 +35,7 @@ class RegistryInterpreter[F[_]: Async: ContextShift](httpClient: Client[F])(impl
       request <- addHeaders(req)
       response <- httpClient.fetch[List[PartitionStrategy]](request) {
                    case Status.Successful(l) => l.as[List[PartitionStrategy]]
-                   case r                    => throwServerError(r)
+                   case r                    => unsuccessfulOperation(r)
                  }
     } yield response
   }

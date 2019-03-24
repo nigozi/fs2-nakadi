@@ -31,7 +31,7 @@ class EventInterpreter[F[_]: Async: ContextShift](httpClient: Client[F])(implici
                    case Status.Successful(_) => M.pure(())
                    case Status.UnprocessableEntity(r) =>
                      r.as[List[BatchItemResponse]].flatMap(e => ME.raiseError(EventValidation(e)))
-                   case r => throwServerError(r)
+                   case r => unsuccessfulOperation(r)
                  }
     } yield response
   }

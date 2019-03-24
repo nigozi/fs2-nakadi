@@ -1,14 +1,14 @@
 package fs2.nakadi.instances
 import java.net.URI
 
-import fs2.nakadi.error.{BatchItemResponse, PublishingStatus, Step}
+import fs2.nakadi.error.{BatchItemResponse, Problem, PublishingStatus, Step}
 import fs2.nakadi.model.Event.{Business, DataChange, Undefined}
 import fs2.nakadi.model.EventTypeSchema.Type
 import fs2.nakadi.model.EventTypeStats.EventTypeStatsPartition
 import fs2.nakadi.model.EventTypeStats.EventTypeStatsPartition.{AssignmentType, State}
 import fs2.nakadi.model._
-import io.circe.Encoder
-import io.circe.derivation.{deriveEncoder, renaming}
+import io.circe.{Decoder, Encoder}
+import io.circe.derivation.{deriveDecoder, deriveEncoder, renaming}
 import io.circe.syntax._
 
 import scala.concurrent.duration.FiniteDuration
@@ -94,4 +94,6 @@ trait Encoders {
     )(x => BatchItemResponse.unapply(x).get)
   implicit lazy val publishingStatusEncoder: Encoder[PublishingStatus] = enumeratum.Circe.encoder(PublishingStatus)
   implicit lazy val stepEncoder: Encoder[Step]                         = enumeratum.Circe.encoder(Step)
+
+  implicit lazy val problemEncoder: Encoder[Problem] = deriveEncoder(renaming.snakeCase)
 }

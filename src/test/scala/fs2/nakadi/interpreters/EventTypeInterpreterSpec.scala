@@ -4,7 +4,7 @@ import java.net.URI
 
 import cats.effect.IO
 import fs2.nakadi.TestResources
-import fs2.nakadi.error.ServerError
+import fs2.nakadi.error.UnknownError
 import fs2.nakadi.implicits._
 import fs2.nakadi.instances.ContextShifts
 import fs2.nakadi.model.{Category, EventType, EventTypeName, NakadiConfig}
@@ -37,11 +37,9 @@ class EventTypeInterpreterSpec extends FlatSpec with Matchers with ContextShifts
   it should "return error if call fails" in {
     val response = new EventTypeInterpreter[IO](failingClient).get(eventType.name)
 
-    val caught = intercept[ServerError] {
+    assertThrows[UnknownError] {
       response.unsafeRunSync()
     }
-
-    caught.status shouldBe 400
   }
 
   it should "list event types" in {
@@ -65,11 +63,9 @@ class EventTypeInterpreterSpec extends FlatSpec with Matchers with ContextShifts
   it should "return error if fails to create the event type" in {
     val response = new EventTypeInterpreter[IO](failingClient).create(eventType)
 
-    val caught = intercept[ServerError] {
+    assertThrows[UnknownError] {
       response.unsafeRunSync()
     }
-
-    caught.status shouldBe 409
   }
 
   private def client(found: Boolean = true): Client[IO] = {

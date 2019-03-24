@@ -25,7 +25,7 @@ class EventTypeInterpreter[F[_]: Async: ContextShift](httpClient: Client[F])(imp
       request <- addHeaders(req)
       response <- httpClient.fetch[List[EventType]](request) {
                    case Status.Successful(l) => l.as[List[EventType]]
-                   case r                    => throwServerError(r)
+                   case r                    => unsuccessfulOperation(r)
                  }
     } yield response
   }
@@ -38,7 +38,7 @@ class EventTypeInterpreter[F[_]: Async: ContextShift](httpClient: Client[F])(imp
       request <- addHeaders(req)
       response <- httpClient.fetch[Unit](request) {
                    case Status.Successful(_) => M.pure(())
-                   case r                    => throwServerError(r)
+                   case r                    => unsuccessfulOperation(r)
                  }
     } yield response
   }
@@ -52,7 +52,7 @@ class EventTypeInterpreter[F[_]: Async: ContextShift](httpClient: Client[F])(imp
       response <- httpClient.fetch[Option[EventType]](request) {
                    case Status.NotFound(_)   => M.pure(None)
                    case Status.Successful(l) => l.as[EventType].map(_.some)
-                   case r                    => throwServerError(r)
+                   case r                    => unsuccessfulOperation(r)
                  }
     } yield response
   }
@@ -65,7 +65,7 @@ class EventTypeInterpreter[F[_]: Async: ContextShift](httpClient: Client[F])(imp
       request <- addHeaders(req)
       response <- httpClient.fetch[Unit](request) {
                    case Status.Successful(_) => M.pure(())
-                   case r                    => throwServerError(r)
+                   case r                    => unsuccessfulOperation(r)
                  }
     } yield response
   }
@@ -78,7 +78,7 @@ class EventTypeInterpreter[F[_]: Async: ContextShift](httpClient: Client[F])(imp
       request <- addHeaders(req)
       response <- httpClient.fetch[Unit](request) {
                    case Status.Successful(_) => M.pure(())
-                   case r                    => throwServerError(r)
+                   case r                    => unsuccessfulOperation(r)
                  }
     } yield response
   }

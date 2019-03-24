@@ -4,11 +4,11 @@ import java.net.URI
 import java.util.UUID
 
 import cats.effect.IO
-import fs2.nakadi.error.ServerError
-import fs2.nakadi.model.{NakadiConfig, PaginationLinks, Subscription, SubscriptionId, SubscriptionQuery}
 import fs2.nakadi.TestResources
+import fs2.nakadi.error.UnknownError
 import fs2.nakadi.implicits._
 import fs2.nakadi.instances.ContextShifts
+import fs2.nakadi.model._
 import org.http4s.HttpApp
 import org.http4s.client.Client
 import org.http4s.dsl.io._
@@ -35,11 +35,9 @@ class SubscriptionInterpreterSpec extends FlatSpec with Matchers with ContextShi
   it should "return error if call fails" in {
     val response = new SubscriptionInterpreter[IO](failingClient).get(subscription.id.value)
 
-    val caught = intercept[ServerError] {
+    assertThrows[UnknownError] {
       response.unsafeRunSync()
     }
-
-    caught.status shouldBe 400
   }
 
   it should "list subscriptions" in {
@@ -63,11 +61,9 @@ class SubscriptionInterpreterSpec extends FlatSpec with Matchers with ContextShi
   it should "return error if fails to create the event type" in {
     val response = new SubscriptionInterpreter[IO](failingClient).create(subscription)
 
-    val caught = intercept[ServerError] {
+    assertThrows[UnknownError] {
       response.unsafeRunSync()
     }
-
-    caught.status shouldBe 409
   }
 
   private def client(found: Boolean = true): Client[IO] = {

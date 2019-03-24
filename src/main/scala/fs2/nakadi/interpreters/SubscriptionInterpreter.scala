@@ -6,7 +6,7 @@ import cats.syntax.option._
 import cats.{Monad, MonadError}
 import com.typesafe.scalalogging.Logger
 import fs2.nakadi.dsl.Subscriptions
-import fs2.nakadi.error.{GeneralError, ServerError}
+import fs2.nakadi.error.ExpectedHeader
 import fs2.nakadi.implicits._
 import fs2.nakadi.model._
 import fs2.{Chunk, Pipe, Stream}
@@ -41,13 +41,13 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient:
       request <- addHeaders(req)
       response <- httpClient.fetch[Subscription](request) {
                    case Status.Successful(l) => l.as[Subscription]
-                   case r                    => throwServerError(r)
+                   case r                    => unsuccessfulOperation(r)
                  }
     } yield response
   }
 
   override def createIfDoesntExist(subscription: Subscription)(implicit config: NakadiConfig[F],
-                                                      flowId: FlowId): F[Subscription] = {
+                                                               flowId: FlowId): F[Subscription] = {
     for {
       subscriptions <- list(Some(subscription.owningApplication), subscription.eventTypes)
       collect = subscriptions.items.filter { returningSubscription =>
@@ -71,10 +71,11 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient:
     } yield createIfEmpty
   }
 
-  override def list(owningApplication: Option[String] = None,
-           eventType: Option[List[EventTypeName]] = None,
-           limit: Option[Int] = None,
-           offset: Option[Int] = None)(implicit config: NakadiConfig[F], flowId: FlowId): F[SubscriptionQuery] = {
+  override def list(
+      owningApplication: Option[String] = None,
+      eventType: Option[List[EventTypeName]] = None,
+      limit: Option[Int] = None,
+      offset: Option[Int] = None)(implicit config: NakadiConfig[F], flowId: FlowId): F[SubscriptionQuery] = {
     val uri = Uri
       .unsafeFromString(s"${config.uri.toString}/subscriptions")
       .withOptionQueryParam("owning_application", owningApplication)
@@ -89,12 +90,13 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient:
       request <- addHeaders(req)
       response <- httpClient.fetch[SubscriptionQuery](request) {
                    case Status.Successful(l) => l.as[SubscriptionQuery]
-                   case r                    => throwServerError(r)
+                   case r                    => unsuccessfulOperation(r)
                  }
     } yield response
   }
 
-  override def get(subscriptionId: SubscriptionId)(implicit config: NakadiConfig[F], flowId: FlowId): F[Option[Subscription]] = {
+  override def get(subscriptionId: SubscriptionId)(implicit config: NakadiConfig[F],
+                                                   flowId: FlowId): F[Option[Subscription]] = {
     val uri = Uri.unsafeFromString(config.uri.toString) / "subscriptions" / subscriptionId.id.toString
     val req = Request[F](GET, uri)
 
@@ -103,7 +105,7 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient:
       response <- httpClient.fetch[Option[Subscription]](request) {
                    case Status.NotFound(_)   => M.pure(None)
                    case Status.Successful(l) => l.as[Subscription].map(_.some)
-                   case r                    => throwServerError(r)
+                   case r                    => unsuccessfulOperation(r)
                  }
     } yield response
   }
@@ -116,13 +118,13 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient:
       request <- addHeaders(req)
       response <- httpClient.fetch[Unit](request) {
                    case Status.Successful(_) => M.pure(())
-                   case r                    => throwServerError(r)
+                   case r                    => unsuccessfulOperation(r)
                  }
     } yield response
   }
 
   override def cursors(subscriptionId: SubscriptionId)(implicit config: NakadiConfig[F],
-                                              flowId: FlowId): F[Option[SubscriptionCursor]] = {
+                                                       flowId: FlowId): F[Option[SubscriptionCursor]] = {
     val uri = Uri.unsafeFromString(config.uri.toString) / "subscriptions" / subscriptionId.id.toString / "cursors"
     val req = Request[F](GET, uri)
 
@@ -131,14 +133,15 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient:
       response <- httpClient.fetch[Option[SubscriptionCursor]](request) {
                    case Status.NotFound(_) | Status.NoContent(_) => M.pure(None)
                    case Status.Successful(l)                     => l.as[SubscriptionCursor].map(_.some)
-                   case r                                        => throwServerError(r)
+                   case r                                        => unsuccessfulOperation(r)
                  }
     } yield response
   }
 
-  override def commitCursors(subscriptionId: SubscriptionId, subscriptionCursor: SubscriptionCursor, streamId: StreamId)(
-      implicit config: NakadiConfig[F],
-      flowId: FlowId): F[Option[CommitCursorResponse]] = {
+  override def commitCursors(
+      subscriptionId: SubscriptionId,
+      subscriptionCursor: SubscriptionCursor,
+      streamId: StreamId)(implicit config: NakadiConfig[F], flowId: FlowId): F[Option[CommitCursorResponse]] = {
     val uri          = Uri.unsafeFromString(config.uri.toString) / "subscriptions" / subscriptionId.id.toString / "cursors"
     val req          = Request[F](POST, uri).withEntity(encode(subscriptionCursor))
     val streamHeader = Header(XNakadiStreamId, streamId.id)
@@ -150,7 +153,7 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient:
       response <- httpClient.fetch[Option[CommitCursorResponse]](request) {
                    case Status.NotFound(_) | Status.NoContent(_) => M.pure(None)
                    case Status.Successful(l)                     => l.as[CommitCursorResponse].map(_.some)
-                   case r                                        => throwServerError(r)
+                   case r                                        => unsuccessfulOperation(r)
                  }
     } yield response
   }
@@ -169,24 +172,23 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient:
       response <- httpClient.fetch[Boolean](request) {
                    case Status.NotFound(_) | Status.NoContent(_) => M.pure(false)
                    case Status.Successful(_)                     => M.pure(true)
-                   case r                                        => throwServerError(r)
+                   case r                                        => unsuccessfulOperation(r)
                  }
     } yield response
   }
 
-  override def stats(subscriptionId: SubscriptionId)(
-    implicit config: NakadiConfig[F],
-    flowId: FlowId): F[Option[SubscriptionStats]] = {
+  override def stats(subscriptionId: SubscriptionId)(implicit config: NakadiConfig[F],
+                                                     flowId: FlowId): F[Option[SubscriptionStats]] = {
     val uri = Uri.unsafeFromString(config.uri.toString) / "subscriptions" / subscriptionId.id.toString / "stats"
     val req = Request[F](GET, uri)
 
     for {
       request <- addHeaders(req)
       response <- httpClient.fetch[Option[SubscriptionStats]](request) {
-        case Status.NotFound(_)   => M.pure(None)
-        case Status.Successful(l) => l.as[SubscriptionStats].map(_.some)
-        case r                    => throwServerError(r)
-      }
+                   case Status.NotFound(_)   => M.pure(None)
+                   case Status.Successful(l) => l.as[SubscriptionStats].map(_.some)
+                   case r                    => unsuccessfulOperation(r)
+                 }
     } yield response
   }
 
@@ -231,16 +233,16 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient:
           val streamId = resp.headers
             .get(CaseInsensitiveString(XNakadiStreamId))
             .map(h => StreamId(h.value))
-            .getOrElse(throw GeneralError(s"$XNakadiStreamId header is missing"))
+            .getOrElse(throw ExpectedHeader(XNakadiStreamId))
 
           resp.body.chunks.through(parseChunks[T]).flatMap {
             case Right(se) => Stream.eval(M.pure(StreamEvent(se, streamId)))
-            case Left(e)   => throw GeneralError(s"failed to parse the event: ${e.message}")
+            case Left(e)   => throw e
           }
         case Status.NotFound => throw SubscriptionNotFound(s"subscription $subscriptionId not found")
         case Status.Conflict =>
           throw NoEmptySlotsOrCursorReset(s"no empty slot for the subscription $subscriptionId")
-        case s => throw ServerError(s.code, Some("unexpected server response"))
+        case _ => Stream.eval(unsuccessfulOperation(resp))
       }
     }
   }
