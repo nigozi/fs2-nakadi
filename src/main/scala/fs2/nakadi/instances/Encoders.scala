@@ -1,7 +1,7 @@
 package fs2.nakadi.instances
 import java.net.URI
 
-import fs2.nakadi.error.{BatchItemResponse, Problem, PublishingStatus, Step}
+import fs2.nakadi.error._
 import fs2.nakadi.model.Event.{Business, DataChange, Undefined}
 import fs2.nakadi.model.EventTypeSchema.Type
 import fs2.nakadi.model.EventTypeStats.EventTypeStatsPartition
@@ -96,4 +96,15 @@ trait Encoders {
   implicit lazy val stepEncoder: Encoder[Step]                         = enumeratum.Circe.encoder(Step)
 
   implicit lazy val problemEncoder: Encoder[Problem] = deriveEncoder(renaming.snakeCase)
+  implicit val basicServerErrorEncoder: Encoder[BasicServerError] =
+    Encoder.forProduct2(
+      "error",
+      "error_description"
+    )(x => BasicServerError.unapply(x).get)
+
+  implicit val basicServerErrorDecoder: Decoder[BasicServerError] =
+    Decoder.forProduct2(
+      "error",
+      "error_description"
+    )(BasicServerError.apply)
 }

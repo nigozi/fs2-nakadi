@@ -4,6 +4,7 @@ import cats.effect.{Async, ContextShift}
 import cats.syntax.flatMap._
 import cats.syntax.functor._
 import cats.{Monad, MonadError}
+import com.typesafe.scalalogging.{Logger, LoggerTakingImplicit}
 import fs2.nakadi.dsl.Events
 import fs2.nakadi.error.{BatchItemResponse, EventValidation}
 import fs2.nakadi.implicits._
@@ -19,6 +20,7 @@ class EventInterpreter[F[_]: Async: ContextShift](httpClient: Client[F])(implici
                                                                          M: Monad[F])
     extends Events[F]
     with Interpreter {
+  private val logger: LoggerTakingImplicit[FlowId] = Logger.takingImplicit[FlowId](classOf[EventInterpreter[F]])
 
   override def publish[T](name: EventTypeName,
                  events: List[Event[T]])(implicit config: NakadiConfig[F], flowId: FlowId, enc: Encoder[T]): F[Unit] = {
@@ -27,6 +29,7 @@ class EventInterpreter[F[_]: Async: ContextShift](httpClient: Client[F])(implici
 
     for {
       request <- addHeaders(req)
+      _ = logger.debug(request.toString())
       response <- httpClient.fetch[Unit](request) {
                    case Status.Successful(_) => M.pure(())
                    case Status.UnprocessableEntity(r) =>

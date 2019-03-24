@@ -4,7 +4,7 @@ import cats.syntax.flatMap._
 import cats.syntax.functor._
 import cats.syntax.option._
 import cats.{Monad, MonadError}
-import com.typesafe.scalalogging.Logger
+import com.typesafe.scalalogging.{Logger, LoggerTakingImplicit}
 import fs2.nakadi.dsl.Subscriptions
 import fs2.nakadi.error.ExpectedHeader
 import fs2.nakadi.implicits._
@@ -29,7 +29,7 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient:
     with Interpreter {
   import SubscriptionInterpreter._
 
-  private lazy val logger = Logger[SubscriptionInterpreter[F]]
+  private val logger: LoggerTakingImplicit[FlowId] = Logger.takingImplicit[FlowId](classOf[SubscriptionInterpreter[F]])
 
   implicit val f: RawFacade[Json] = io.circe.jawn.CirceSupportParser.facade
 
@@ -39,6 +39,7 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient:
 
     for {
       request <- addHeaders(req)
+      _       = logger.debug(request.toString())
       response <- httpClient.fetch[Subscription](request) {
                    case Status.Successful(l) => l.as[Subscription]
                    case r                    => unsuccessfulOperation(r)
@@ -88,6 +89,7 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient:
 
     for {
       request <- addHeaders(req)
+      _       = logger.debug(request.toString())
       response <- httpClient.fetch[SubscriptionQuery](request) {
                    case Status.Successful(l) => l.as[SubscriptionQuery]
                    case r                    => unsuccessfulOperation(r)
@@ -102,6 +104,7 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient:
 
     for {
       request <- addHeaders(req)
+      _       = logger.debug(request.toString())
       response <- httpClient.fetch[Option[Subscription]](request) {
                    case Status.NotFound(_)   => M.pure(None)
                    case Status.Successful(l) => l.as[Subscription].map(_.some)
@@ -116,6 +119,7 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient:
 
     for {
       request <- addHeaders(req)
+      _       = logger.debug(request.toString())
       response <- httpClient.fetch[Unit](request) {
                    case Status.Successful(_) => M.pure(())
                    case r                    => unsuccessfulOperation(r)
@@ -130,6 +134,7 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient:
 
     for {
       request <- addHeaders(req)
+      _       = logger.debug(request.toString())
       response <- httpClient.fetch[Option[SubscriptionCursor]](request) {
                    case Status.NotFound(_) | Status.NoContent(_) => M.pure(None)
                    case Status.Successful(l)                     => l.as[SubscriptionCursor].map(_.some)
@@ -150,6 +155,7 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient:
 
     for {
       request <- addHeaders(req, List(streamHeader))
+      _       = logger.debug(request.toString())
       response <- httpClient.fetch[Option[CommitCursorResponse]](request) {
                    case Status.NotFound(_) | Status.NoContent(_) => M.pure(None)
                    case Status.Successful(l)                     => l.as[CommitCursorResponse].map(_.some)
@@ -169,6 +175,7 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient:
 
     for {
       request <- addHeaders(req)
+      _       = logger.debug(request.toString())
       response <- httpClient.fetch[Boolean](request) {
                    case Status.NotFound(_) | Status.NoContent(_) => M.pure(false)
                    case Status.Successful(_)                     => M.pure(true)
@@ -184,6 +191,7 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient:
 
     for {
       request <- addHeaders(req)
+      _       = logger.debug(request.toString())
       response <- httpClient.fetch[Option[SubscriptionStats]](request) {
                    case Status.NotFound(_)   => M.pure(None)
                    case Status.Successful(l) => l.as[SubscriptionStats].map(_.some)
@@ -198,9 +206,12 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient:
 
     connect[T](subscriptionId, streamConfig).handleErrorWith {
       case NoEmptySlotsOrCursorReset(_) =>
+        logger.error("No empty slots or cursor reset, restarting")
         Thread.sleep(streamConfig.noEmptySlotsRetryDelay.toMillis)
         connect(subscriptionId, streamConfig)
-      case e => Stream.raiseError(e)
+      case e =>
+        logger.error("stream failure", e)
+        Stream.raiseError(e)
     }
   }
 
@@ -224,27 +235,32 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient:
       .withOptionQueryParam("stream_keep_alive_limit", streamConfig.streamKeepAliveLimit)
       .withOptionQueryParam("commit_timeout", streamConfig.commitTimeout.map(_.toSeconds))
 
-    val request  = addHeaders(Request[F](GET, uri), List(Connection(CaseInsensitiveString("keep-alive"))))
-    val response = Stream.eval(request).flatMap(httpClient.stream)
+    val request = for {
+      req <- addHeaders(Request[F](GET, uri), List(Connection(CaseInsensitiveString("keep-alive"))))
+      _   = logger.debug(req.toString())
+    } yield req
 
-    response.flatMap { resp =>
-      resp.status match {
-        case s if s.isSuccess =>
-          val streamId = resp.headers
-            .get(CaseInsensitiveString(XNakadiStreamId))
-            .map(h => StreamId(h.value))
-            .getOrElse(throw ExpectedHeader(XNakadiStreamId))
+    Stream
+      .eval(request)
+      .flatMap(httpClient.stream)
+      .flatMap { resp =>
+        resp.status match {
+          case s if s.isSuccess =>
+            val streamId = resp.headers
+              .get(CaseInsensitiveString(XNakadiStreamId))
+              .map(h => StreamId(h.value))
+              .getOrElse(throw ExpectedHeader(XNakadiStreamId))
 
-          resp.body.chunks.through(parseChunks[T]).flatMap {
-            case Right(se) => Stream.eval(M.pure(StreamEvent(se, streamId)))
-            case Left(e)   => throw e
-          }
-        case Status.NotFound => throw SubscriptionNotFound(s"subscription $subscriptionId not found")
-        case Status.Conflict =>
-          throw NoEmptySlotsOrCursorReset(s"no empty slot for the subscription $subscriptionId")
-        case _ => Stream.eval(unsuccessfulOperation(resp))
+            resp.body.chunks.through(parseChunks[T]).flatMap {
+              case Right(se) => Stream.eval(M.pure(StreamEvent(se, streamId)))
+              case Left(e)   => throw e
+            }
+          case Status.NotFound => throw SubscriptionNotFound(s"subscription $subscriptionId not found")
+          case Status.Conflict =>
+            throw NoEmptySlotsOrCursorReset(s"no empty slot for the subscription $subscriptionId")
+          case _ => Stream.eval(unsuccessfulOperation(resp))
+        }
       }
-    }
   }
 
   private def parseChunks[T: Decoder]: Pipe[F, Chunk[Byte], Either[DecodingFailure, SubscriptionEvent[T]]] = { stream =>
