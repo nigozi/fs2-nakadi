@@ -34,7 +34,7 @@ class EventTypeInterpreterSpec extends FlatSpec with Matchers with ContextShifts
     response shouldBe None
   }
 
-  it should "return error if call fails" in {
+  it should "raise error if failed" in {
     val response = new EventTypeInterpreter[IO](failingClient).get(eventType.name)
 
     assertThrows[UnknownError] {
@@ -54,13 +54,13 @@ class EventTypeInterpreterSpec extends FlatSpec with Matchers with ContextShifts
     noException should be thrownBy response.unsafeRunSync()
   }
 
-  it should "create the event type" in {
+  it should "create an event type" in {
     val response = new EventTypeInterpreter[IO](client()).create(eventType)
 
     noException should be thrownBy response.unsafeRunSync()
   }
 
-  it should "return error if fails to create the event type" in {
+  it should "raise error if creation failed" in {
     val response = new EventTypeInterpreter[IO](failingClient).create(eventType)
 
     assertThrows[UnknownError] {

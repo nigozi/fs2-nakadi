@@ -35,7 +35,7 @@ class EventInterpreterSpec extends FlatSpec with Matchers with ContextShifts wit
     noException should be thrownBy response.unsafeRunSync()
   }
 
-  it should "return error when publish fails" in {
+  it should "raise error when publish fails" in {
     val response = new EventInterpreter[IO](client(success = false)).publish[Json](EventTypeName("test"), List(event))
 
     val caught = intercept[EventValidation] {

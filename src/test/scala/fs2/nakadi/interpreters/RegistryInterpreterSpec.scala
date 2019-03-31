@@ -18,13 +18,13 @@ class RegistryInterpreterSpec extends FlatSpec with Matchers with ContextShifts 
 
   private val interpreter = new RegistryInterpreter[IO](client())
 
-  "RegistryInterpreter" should "return enrichment strategies" in {
+  "RegistryInterpreter" should "list enrichment strategies" in {
     val response = interpreter.enrichmentStrategies.unsafeRunSync()
 
     response shouldBe List(MetadataEnrichment)
   }
 
-  it should "return partition strategies" in {
+  it should "list partition strategies" in {
     val response = interpreter.partitionStrategies.unsafeRunSync()
 
     response shouldBe List(Random, UserDefined, Hash)

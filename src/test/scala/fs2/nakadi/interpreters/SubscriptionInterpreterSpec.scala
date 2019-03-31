@@ -32,7 +32,7 @@ class SubscriptionInterpreterSpec extends FlatSpec with Matchers with ContextShi
     response shouldBe None
   }
 
-  it should "return error if call fails" in {
+  it should "raise error if call fails" in {
     val response = new SubscriptionInterpreter[IO](failingClient).get(subscription.id.value)
 
     assertThrows[UnknownError] {
@@ -52,13 +52,13 @@ class SubscriptionInterpreterSpec extends FlatSpec with Matchers with ContextShi
     noException should be thrownBy response.unsafeRunSync()
   }
 
-  it should "create the event type" in {
+  it should "create an event type" in {
     val response = new SubscriptionInterpreter[IO](client()).create(subscription)
 
     noException should be thrownBy response.unsafeRunSync()
   }
 
-  it should "return error if fails to create the event type" in {
+  it should "raise error if creation failed" in {
     val response = new SubscriptionInterpreter[IO](failingClient).create(subscription)
 
     assertThrows[UnknownError] {

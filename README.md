@@ -122,10 +122,13 @@ Stream
 You can also use `managedEventStream` which receives a callback and applies it to every event:
 
 ```scala
-val callback =
-    EventCallback.successAlways[User](
-      _.subscriptionEvent.events
-        .foreach(_.foreach(e => logger.info(s"Received Event: ${e.data.toString}"))))
+val callback: Subscriptions.EventCallback[User] =
+    _.subscriptionEvent.events match {
+      case Some(ev) =>
+        ev.foreach(e => println(s"Received Event: ${e.data.toString}"))
+        true
+      case _ => true
+    }
 
 Stream
     .eval(sub)

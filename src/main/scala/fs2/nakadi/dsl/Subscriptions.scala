@@ -2,6 +2,7 @@ package fs2.nakadi.dsl
 import cats.effect.IO
 import cats.tagless.finalAlg
 import fs2.Stream
+import fs2.nakadi.dsl.Subscriptions.EventCallback
 import fs2.nakadi.instances.ContextShifts
 import fs2.nakadi.interpreters.SubscriptionInterpreter
 import fs2.nakadi.model._
@@ -10,6 +11,7 @@ import io.circe.Decoder
 
 @finalAlg
 trait Subscriptions[F[_]] {
+
   def create(subscription: Subscription)(implicit config: NakadiConfig[F],
                                          flowId: FlowId = randomFlowId()): F[Subscription]
 
@@ -39,7 +41,7 @@ trait Subscriptions[F[_]] {
 
   def resetCursors(subscriptionId: SubscriptionId, subscriptionCursor: Option[SubscriptionCursor] = None)(
       implicit config: NakadiConfig[F],
-      flowId: FlowId = randomFlowId()): F[Boolean]
+      flowId: FlowId = randomFlowId()): F[Unit]
 
   def eventStream[T: Decoder](subscriptionId: SubscriptionId, streamConfig: StreamConfig)(
       implicit config: NakadiConfig[F],
@@ -52,5 +54,7 @@ trait Subscriptions[F[_]] {
 }
 
 object Subscriptions extends ContextShifts {
+  type EventCallback[T] = EventCallbackData[T] => Boolean
+
   implicit object ioInterpreter extends SubscriptionInterpreter[IO](httpClient[IO])
 }
