@@ -1,10 +1,9 @@
-package fs2.nakadi.interpreters
+package fs2.nakadi.client
 
 import java.net.URI
 
-import cats.effect.IO
+import cats.effect.{ContextShift, IO}
 import fs2.nakadi.TestResources
-import fs2.nakadi.instances.ContextShifts
 import fs2.nakadi.model.EnrichmentStrategy.MetadataEnrichment
 import fs2.nakadi.model.NakadiConfig
 import fs2.nakadi.model.PartitionStrategy.{Hash, Random, UserDefined}
@@ -13,10 +12,13 @@ import org.http4s.client.Client
 import org.http4s.dsl.io._
 import org.scalatest.{FlatSpec, Matchers}
 
-class RegistryInterpreterSpec extends FlatSpec with Matchers with ContextShifts with TestResources {
-  private implicit val config: NakadiConfig[IO] = NakadiConfig(uri = new URI(""))
+import scala.concurrent.ExecutionContext.Implicits.global
 
-  private val interpreter = new RegistryInterpreter[IO](client())
+class RegistryClientSpec extends FlatSpec with Matchers with TestResources {
+  private implicit val config: NakadiConfig[IO] = NakadiConfig(uri = new URI(""))
+  implicit val cs: ContextShift[IO]             = IO.contextShift(global)
+
+  private val interpreter = new RegistryClient[IO](client())
 
   "RegistryInterpreter" should "list enrichment strategies" in {
     val response = interpreter.enrichmentStrategies.unsafeRunSync()

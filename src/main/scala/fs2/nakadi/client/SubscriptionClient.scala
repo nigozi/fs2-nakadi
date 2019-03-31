@@ -1,16 +1,16 @@
-package fs2.nakadi.interpreters
+package fs2.nakadi.client
+import cats.MonadError
 import cats.effect.{Async, Concurrent, ContextShift}
 import cats.syntax.applicativeError._
 import cats.syntax.flatMap._
 import cats.syntax.functor._
 import cats.syntax.option._
-import cats.{Monad, MonadError}
 import com.typesafe.scalalogging.{Logger, LoggerTakingImplicit}
-import fs2.nakadi.dsl.Subscriptions
-import fs2.nakadi.dsl.Subscriptions.EventCallback
+import fs2.nakadi.dsl.SubscriptionDsl
 import fs2.nakadi.error.ExpectedHeader
 import fs2.nakadi.implicits._
 import fs2.nakadi.model._
+import fs2.nakadi.{EventCallback, httpClient}
 import fs2.{Chunk, Pipe, Stream}
 import io.circe.{Decoder, DecodingFailure, Json}
 import jawnfs2._
@@ -24,18 +24,16 @@ import org.typelevel.jawn.RawFacade
 
 import scala.util.{Failure, Success, Try}
 
-class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient: Client[F])(
-    implicit ME: MonadError[F, Throwable],
-    M: Monad[F])
-    extends Subscriptions[F]
-    with Interpreter {
-  import SubscriptionInterpreter._
+class SubscriptionClient[F[_]: Async: ContextShift: Concurrent](httpClient: Client[F])(implicit config: NakadiConfig[F],
+                                                                                       M: MonadError[F, Throwable])
+    extends SubscriptionDsl[F] {
+  import SubscriptionClient._
 
-  private val logger: LoggerTakingImplicit[FlowId] = Logger.takingImplicit[FlowId](classOf[SubscriptionInterpreter[F]])
+  private val logger: LoggerTakingImplicit[FlowId] = Logger.takingImplicit[FlowId](classOf[SubscriptionClient[F]])
 
   implicit val f: RawFacade[Json] = io.circe.jawn.CirceSupportParser.facade
 
-  override def create(subscription: Subscription)(implicit config: NakadiConfig[F], flowId: FlowId): F[Subscription] = {
+  override def create(subscription: Subscription)(implicit flowId: FlowId): F[Subscription] = {
     val uri = Uri.unsafeFromString(config.uri.toString) / "subscriptions"
     val req = Request[F](POST, uri).withEntity(encode(subscription))
 
@@ -49,8 +47,7 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient:
     } yield response
   }
 
-  override def createIfDoesntExist(subscription: Subscription)(implicit config: NakadiConfig[F],
-                                                               flowId: FlowId): F[Subscription] = {
+  override def createIfDoesntExist(subscription: Subscription)(implicit flowId: FlowId): F[Subscription] = {
     for {
       subscriptions <- list(Some(subscription.owningApplication), subscription.eventTypes)
       collect = subscriptions.items.filter { returningSubscription =>
@@ -74,11 +71,10 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient:
     } yield createIfEmpty
   }
 
-  override def list(
-      owningApplication: Option[String] = None,
-      eventType: Option[List[EventTypeName]] = None,
-      limit: Option[Int] = None,
-      offset: Option[Int] = None)(implicit config: NakadiConfig[F], flowId: FlowId): F[SubscriptionQuery] = {
+  override def list(owningApplication: Option[String] = None,
+                    eventType: Option[List[EventTypeName]] = None,
+                    limit: Option[Int] = None,
+                    offset: Option[Int] = None)(implicit flowId: FlowId): F[SubscriptionQuery] = {
     val uri = Uri
       .unsafeFromString(s"${config.uri.toString}/subscriptions")
       .withOptionQueryParam("owning_application", owningApplication)
@@ -99,8 +95,7 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient:
     } yield response
   }
 
-  override def get(subscriptionId: SubscriptionId)(implicit config: NakadiConfig[F],
-                                                   flowId: FlowId): F[Option[Subscription]] = {
+  override def get(subscriptionId: SubscriptionId)(implicit flowId: FlowId): F[Option[Subscription]] = {
     val uri = Uri.unsafeFromString(config.uri.toString) / "subscriptions" / subscriptionId.id.toString
     val req = Request[F](GET, uri)
 
@@ -115,7 +110,7 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient:
     } yield response
   }
 
-  override def delete(subscriptionId: SubscriptionId)(implicit config: NakadiConfig[F], flowId: FlowId): F[Unit] = {
+  override def delete(subscriptionId: SubscriptionId)(implicit flowId: FlowId): F[Unit] = {
     val uri = Uri.unsafeFromString(config.uri.toString) / "subscriptions" / subscriptionId.id.toString
     val req = Request[F](DELETE, uri)
 
@@ -129,8 +124,7 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient:
     } yield response
   }
 
-  override def cursors(subscriptionId: SubscriptionId)(implicit config: NakadiConfig[F],
-                                                       flowId: FlowId): F[Option[SubscriptionCursor]] = {
+  override def cursors(subscriptionId: SubscriptionId)(implicit flowId: FlowId): F[Option[SubscriptionCursor]] = {
     val uri = Uri.unsafeFromString(config.uri.toString) / "subscriptions" / subscriptionId.id.toString / "cursors"
     val req = Request[F](GET, uri)
 
@@ -145,10 +139,9 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient:
     } yield response
   }
 
-  override def commitCursors(
-      subscriptionId: SubscriptionId,
-      subscriptionCursor: SubscriptionCursor,
-      streamId: StreamId)(implicit config: NakadiConfig[F], flowId: FlowId): F[Option[CommitCursorResponse]] = {
+  override def commitCursors(subscriptionId: SubscriptionId,
+                             subscriptionCursor: SubscriptionCursor,
+                             streamId: StreamId)(implicit flowId: FlowId): F[Option[CommitCursorResponse]] = {
     val uri          = Uri.unsafeFromString(config.uri.toString) / "subscriptions" / subscriptionId.id.toString / "cursors"
     val req          = Request[F](POST, uri).withEntity(encode(subscriptionCursor))
     val streamHeader = Header(XNakadiStreamId, streamId.id)
@@ -168,8 +161,7 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient:
   }
 
   override def resetCursors(subscriptionId: SubscriptionId, subscriptionCursor: Option[SubscriptionCursor] = None)(
-      implicit config: NakadiConfig[F],
-      flowId: FlowId): F[Unit] = {
+      implicit flowId: FlowId): F[Unit] = {
     val uri = Uri.unsafeFromString(config.uri.toString) / "subscriptions" / subscriptionId.id.toString / "cursors"
     val req = subscriptionCursor match {
       case Some(c) => Request[F](PATCH, uri).withEntity(encode(c))
@@ -186,8 +178,7 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient:
     } yield response
   }
 
-  override def stats(subscriptionId: SubscriptionId)(implicit config: NakadiConfig[F],
-                                                     flowId: FlowId): F[Option[SubscriptionStats]] = {
+  override def stats(subscriptionId: SubscriptionId)(implicit flowId: FlowId): F[Option[SubscriptionStats]] = {
     val uri = Uri.unsafeFromString(config.uri.toString) / "subscriptions" / subscriptionId.id.toString / "stats"
     val req = Request[F](GET, uri)
 
@@ -203,20 +194,18 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient:
   }
 
   override def eventStream[T: Decoder](subscriptionId: SubscriptionId, streamConfig: StreamConfig)(
-      implicit config: NakadiConfig[F],
-      flowId: FlowId): Stream[F, StreamEvent[T]] =
+      implicit flowId: FlowId): Stream[F, StreamEvent[T]] =
     connect[T](subscriptionId, streamConfig)
 
   override def managedEventStream[T: Decoder](parallelism: Int)(
       subscriptionId: SubscriptionId,
       eventCallback: EventCallback[T],
-      streamConfig: StreamConfig)(implicit config: NakadiConfig[F], flowId: FlowId): Stream[F, Boolean] =
+      streamConfig: StreamConfig)(implicit flowId: FlowId): Stream[F, Boolean] =
     connect[T](subscriptionId, streamConfig)
       .through(processEvents(parallelism)(subscriptionId, eventCallback))
 
   private def connect[T: Decoder](subscriptionId: SubscriptionId, streamConfig: StreamConfig)(
-      implicit config: NakadiConfig[F],
-      flowId: FlowId): Stream[F, StreamEvent[T]] = {
+      implicit flowId: FlowId): Stream[F, StreamEvent[T]] = {
     val uri = Uri
       .unsafeFromString(s"${config.uri.toString}/subscriptions/${subscriptionId.id.toString}/events")
       .withOptionQueryParam("max_uncommitted_events", streamConfig.maxUncommittedEvents)
@@ -272,8 +261,7 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient:
   }
 
   private def processEvents[T](parallelism: Int)(subscriptionId: SubscriptionId, callback: EventCallback[T])(
-      implicit config: NakadiConfig[F],
-      flowId: FlowId): Pipe[F, StreamEvent[T], Boolean] = { stream =>
+      implicit flowId: FlowId): Pipe[F, StreamEvent[T], Boolean] = { stream =>
     stream
       .mapAsync(parallelism) { se =>
         Try(callback(EventCallbackData(se.event, se.streamId, flowId))) match {
@@ -295,7 +283,10 @@ class SubscriptionInterpreter[F[_]: Async: ContextShift: Concurrent](httpClient:
   }
 }
 
-object SubscriptionInterpreter {
+object SubscriptionClient {
+  def apply[F[_]: Async: ContextShift: Concurrent](implicit config: NakadiConfig[F]): SubscriptionDsl[F] =
+    new SubscriptionClient(httpClient[F])
+
   final case class NoEmptySlotsOrCursorReset(message: String) extends Throwable
   final case class SubscriptionNotFound(message: String)      extends Throwable
 }

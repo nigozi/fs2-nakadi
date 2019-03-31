@@ -1,13 +1,12 @@
-package fs2.nakadi.interpreters
+package fs2.nakadi.client
 
 import java.net.URI
 import java.util.UUID
 
-import cats.effect.IO
+import cats.effect.{ContextShift, IO}
 import fs2.nakadi.TestResources
 import fs2.nakadi.error.UnknownError
 import fs2.nakadi.implicits._
-import fs2.nakadi.instances.ContextShifts
 import fs2.nakadi.model._
 import org.http4s.HttpApp
 import org.http4s.client.Client
@@ -15,25 +14,28 @@ import org.http4s.dsl.io._
 import org.scalatest.OptionValues._
 import org.scalatest.{FlatSpec, Matchers}
 
-class SubscriptionInterpreterSpec extends FlatSpec with Matchers with ContextShifts with TestResources {
+import scala.concurrent.ExecutionContext.Implicits.global
+
+class SubscriptionClientSpec extends FlatSpec with Matchers with TestResources {
   implicit val config: NakadiConfig[IO] = NakadiConfig(uri = new URI(""))
+  implicit val cs: ContextShift[IO]             = IO.contextShift(global)
 
   private val subscription = Subscription(owningApplication = "test", id = Some(SubscriptionId(UUID.randomUUID())))
 
   "SubscriptionInterpreter" should "find an existing subscription" in {
-    val response = new SubscriptionInterpreter[IO](client()).get(subscription.id.value).unsafeRunSync()
+    val response = new SubscriptionClient[IO](client()).get(subscription.id.value).unsafeRunSync()
 
     response shouldBe Some(subscription)
   }
 
   it should "return None if subscription doesn't exist" in {
-    val response = new SubscriptionInterpreter[IO](client(found = false)).get(subscription.id.value).unsafeRunSync()
+    val response = new SubscriptionClient[IO](client(found = false)).get(subscription.id.value).unsafeRunSync()
 
     response shouldBe None
   }
 
   it should "raise error if call fails" in {
-    val response = new SubscriptionInterpreter[IO](failingClient).get(subscription.id.value)
+    val response = new SubscriptionClient[IO](failingClient).get(subscription.id.value)
 
     assertThrows[UnknownError] {
       response.unsafeRunSync()
@@ -41,25 +43,25 @@ class SubscriptionInterpreterSpec extends FlatSpec with Matchers with ContextShi
   }
 
   it should "list subscriptions" in {
-    val response = new SubscriptionInterpreter[IO](client()).list().unsafeRunSync()
+    val response = new SubscriptionClient[IO](client()).list().unsafeRunSync()
 
     response.items shouldBe List(subscription)
   }
 
   it should "delete the event type" in {
-    val response = new SubscriptionInterpreter[IO](client()).delete(subscription.id.value)
+    val response = new SubscriptionClient[IO](client()).delete(subscription.id.value)
 
     noException should be thrownBy response.unsafeRunSync()
   }
 
   it should "create an event type" in {
-    val response = new SubscriptionInterpreter[IO](client()).create(subscription)
+    val response = new SubscriptionClient[IO](client()).create(subscription)
 
     noException should be thrownBy response.unsafeRunSync()
   }
 
   it should "raise error if creation failed" in {
-    val response = new SubscriptionInterpreter[IO](failingClient).create(subscription)
+    val response = new SubscriptionClient[IO](failingClient).create(subscription)
 
     assertThrows[UnknownError] {
       response.unsafeRunSync()

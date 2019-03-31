@@ -88,11 +88,9 @@ scalacOptions ++= Seq(
 )
 
 addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.9")
-addCompilerPlugin(("org.scalameta" % "paradise" % "3.0.0-M11").cross(CrossVersion.full))
 
 libraryDependencies ++= Seq(
   "org.typelevel"              %% "cats-free"           % "1.6.0",
-  "org.typelevel"              %% "cats-tagless-macros" % "0.1.0",
   "io.circe"                   %% "circe-core"          % circeVersion,
   "io.circe"                   %% "circe-java8"         % circeVersion,
   "io.circe"                   %% "circe-parser"        % circeVersion,

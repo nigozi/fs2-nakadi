@@ -1,4 +1,4 @@
-package fs2.nakadi.interpreters
+package fs2.nakadi.client
 
 import java.net.URI
 import java.util.UUID
@@ -7,7 +7,6 @@ import cats.effect.IO
 import fs2.nakadi.TestResources
 import fs2.nakadi.error.{BatchItemResponse, EventValidation, PublishingStatus, Step}
 import fs2.nakadi.implicits._
-import fs2.nakadi.instances.ContextShifts
 import fs2.nakadi.model.Event.Business
 import fs2.nakadi.model.{EventId, EventTypeName, Metadata, NakadiConfig}
 import io.circe.Json
@@ -17,7 +16,7 @@ import org.http4s.client.Client
 import org.http4s.dsl.io._
 import org.scalatest.{FlatSpec, Matchers}
 
-class EventInterpreterSpec extends FlatSpec with Matchers with ContextShifts with TestResources {
+class EventClientSpec extends FlatSpec with Matchers with TestResources {
   implicit val config: NakadiConfig[IO] = NakadiConfig(uri = new URI(""))
 
   private val validationError = BatchItemResponse(
@@ -30,13 +29,13 @@ class EventInterpreterSpec extends FlatSpec with Matchers with ContextShifts wit
   private val event = Business("""{"foo": "bar"}""".asJson, Metadata())
 
   "EventInterpreter" should "publish events" in {
-    val response = new EventInterpreter[IO](client()).publish[Json](EventTypeName("test"), List(event))
+    val response = new EventClient[IO](client()).publish[Json](EventTypeName("test"), List(event))
 
     noException should be thrownBy response.unsafeRunSync()
   }
 
   it should "raise error when publish fails" in {
-    val response = new EventInterpreter[IO](client(success = false)).publish[Json](EventTypeName("test"), List(event))
+    val response = new EventClient[IO](client(success = false)).publish[Json](EventTypeName("test"), List(event))
 
     val caught = intercept[EventValidation] {
       response.unsafeRunSync()

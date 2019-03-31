@@ -30,6 +30,7 @@ fs2-nakadi provides a simple DSL for dealing with event types:
 ```scala
 import cats.effect.IO
 import java.net.URI
+import fs2.nakadi.client._
 import fs2.nakadi.model._
 import fs2.nakadi.dsl._
 
@@ -44,10 +45,10 @@ val business = EventType(
 )
 
 // Create the EventType
-EventTypes[IO].create(business)
+EventTypeClient[IO].create(business)
 
 // Find the EventType
-EventTypes[IO].get(EventTypeName("business-data"))
+EventTypeClient[IO].get(EventTypeName("business-data"))
 ```
 
 ### Publish Events
@@ -80,14 +81,17 @@ val event: Event[User] = Business(
   metadata = Metadata()
 )
 
+val eventClient = EventClient[IO]
+
 // Publish a list of Event
-Events[IO].publish[User](EventTypeName("user-data"), List(event))
+eventClient.publish[User](EventTypeName("user-data"), List(event))
 
 
 // Publish a Stream
 Stream
-  .emits(List(event))
-  .through(Events[IO].publishStream[User](EventTypeName("user-data")))
+    .emit(event)
+    .repeat
+    .through(eventClient.publishStream[User](EventTypeName("user-data")))
 
 ```
 
@@ -101,9 +105,11 @@ import fs2.nakadi.model._
 import fs2.nakadi.dsl._
 import fs2.Stream
 
+val subClient = SubscriptionClient[IO]
+
 // Create a subscription if doesn't exist
 val sub = 
-Subscriptions[IO]
+  subClient
     .createIfDoesntExist(
         Subscription(
           owningApplication = "fs2-nakadi", 
@@ -115,14 +121,14 @@ Subscriptions[IO]
 // Create event stream
 Stream
     .eval(sub)
-    .flatMap(s => Subscriptions[IO].eventStream[User](s.id.get, StreamConfig()))
+    .flatMap(s => subClient.eventStream[User](s.id.get, StreamConfig()))
 
 ```
 
 You can also use `managedEventStream` which receives a callback and applies it to every event:
 
 ```scala
-val callback: Subscriptions.EventCallback[User] =
+val callback: EventCallback[User] =
     _.subscriptionEvent.events match {
       case Some(ev) =>
         ev.foreach(e => println(s"Received Event: ${e.data.toString}"))
@@ -132,7 +138,9 @@ val callback: Subscriptions.EventCallback[User] =
 
 Stream
     .eval(sub)
-    .flatMap(s => Subscriptions[IO].managedEventStream[User](1)(s.id.get, callback, StreamConfig()))
+    .flatMap { s =>
+      subClient.managedEventStream[User](1)(s.id.get, callback, StreamConfig())
+    }
 ```
 
  
